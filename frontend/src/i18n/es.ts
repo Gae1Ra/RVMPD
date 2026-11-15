@@ -23,6 +23,17 @@ export const es = {
     toggle: 'Cambiar tema claro u oscuro',
     title: 'Alternar tema oscuro / claro',
   },
+  voice: {
+    mute: 'Silenciar voz',
+    unmute: 'Activar voz',
+    volume: 'Volumen de voz',
+    unlockBanner: 'Toca una vez para activar la voz',
+    unlockAction: 'Activar voz',
+    statusEleven: 'Voz ElevenLabs',
+    statusBrowser: 'Voz del navegador',
+    statusMuted: 'Silenciado',
+    normalized: 'Los signos vitales han vuelto a tu rango normal.',
+  },
   lang: {
     es: 'ES',
     en: 'EN',

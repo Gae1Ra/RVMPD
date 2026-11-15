@@ -30,6 +30,7 @@ import { SpaceWeatherPanel } from './components/SpaceWeatherPanel'
 import { AnalysisPanel } from './components/AnalysisPanel'
 import { MedicalAiPanel } from './components/MedicalAiPanel'
 import { useTelemetry } from './hooks/useTelemetry'
+import { useVoice } from './hooks/useVoice'
 import {
   applyFrameToIndicators,
   cloneInitialIndicators,
@@ -50,7 +51,9 @@ function emptySeries(): Record<IndicatorId, Record<TimeRange, SeriesPoint[]>> {
 
 export default function App() {
   const { frame, mode, history, setScenario, disconnected } = useTelemetry()
-  const { t, tf, formatNumber } = useT()
+  const { t, tf, formatNumber, locale } = useT()
+  const voice = useVoice(locale, t.voice.normalized)
+  const { speakAlertBatch, speakNormalized, speakAnalysis } = voice
 
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
   const [role, setRole] = useState<Role>('medico')
@@ -79,6 +82,8 @@ export default function App() {
   const lastFrameAtRef = useRef<number>(Date.now())
   const prevScenarioRef = useRef('nominal')
   const prevSnapshotTaken = useRef(false)
+  const spokenAlertIdsRef = useRef<Set<string>>(new Set())
+  const hadAlertRef = useRef(false)
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg)
@@ -119,7 +124,25 @@ export default function App() {
       }
       return next
     })
-  }, [frame, history])
+
+    // Auto-speak only newly seen amber/red alerts (not every telemetry tick).
+    const actionable = (frame.alerts ?? []).filter((a) => a.level === 'amber' || a.level === 'red')
+    const fresh = actionable.filter((a) => !spokenAlertIdsRef.current.has(a.id))
+    if (fresh.length > 0) {
+      for (const a of fresh) spokenAlertIdsRef.current.add(a.id)
+      hadAlertRef.current = true
+      speakAlertBatch(fresh)
+    }
+    // Drop ids that are no longer active so a re-fire later can speak again (anti-repeat still applies).
+    const activeIds = new Set(actionable.map((a) => a.id))
+    for (const id of [...spokenAlertIdsRef.current]) {
+      if (!activeIds.has(id)) spokenAlertIdsRef.current.delete(id)
+    }
+    if (frame.global.status === 'green' && hadAlertRef.current && actionable.length === 0) {
+      hadAlertRef.current = false
+      speakNormalized()
+    }
+  }, [frame, history, speakAlertBatch, speakNormalized])
 
   // Age of last frame for StatusBar / wrist offline banner.
   useEffect(() => {
@@ -257,9 +280,34 @@ export default function App() {
         : 'recovering'
       : 'off'
 
+  const voiceStatusLabel =
+    voice.muted || voice.provider === 'muted'
+      ? t.voice.statusMuted
+      : voice.provider === 'elevenlabs'
+        ? t.voice.statusEleven
+        : t.voice.statusBrowser
+
   return (
     <div className="min-h-screen app-shell">
       <div className="app-frame max-w-[1280px] mx-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-4 min-h-screen">
+        {!voice.unlocked && (
+          <div
+            role="status"
+            className="vitalis-glass px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-[13px]"
+            style={{ borderColor: 'var(--border)' }}
+          >
+            <span style={{ color: 'var(--text-muted)' }}>{t.voice.unlockBanner}</span>
+            <button
+              type="button"
+              onClick={voice.unlock}
+              className="touch-target px-3 py-1.5 rounded-[10px] text-[13px] font-semibold cursor-pointer"
+              style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
+            >
+              {t.voice.unlockAction}
+            </button>
+          </div>
+        )}
+
         <Header
           role={role}
           onRoleChange={setRole}
@@ -271,6 +319,11 @@ export default function App() {
           linkMode={mode}
           scenarioId={scenarioId}
           onSetScenario={handleSetScenario}
+          voiceMuted={voice.muted}
+          voiceVolume={voice.volume}
+          voiceProvider={voice.provider}
+          onToggleMute={voice.toggleMute}
+          onVolumeChange={voice.setVolume}
         />
 
         {surface === 'panel' ? (
@@ -331,7 +384,10 @@ export default function App() {
             <section className="grid grid-cols-1 md:grid-cols-3 gap-3.5 panel-secondary-grid">
               <CheckInPanel onToast={showToast} />
               <SpaceWeatherPanel />
-              <AnalysisPanel onToast={showToast} />
+              <AnalysisPanel
+                onToast={showToast}
+                onAnalyzed={(report) => speakAnalysis(report, locale)}
+              />
             </section>
           </>
         ) : (
@@ -347,6 +403,11 @@ export default function App() {
             onNotifyTeam={handleConfirmNotify}
             isOffline={disconnected && mode !== 'connecting'}
             linkLive={mode === 'live'}
+            voiceMuted={voice.muted}
+            voiceVolume={voice.volume}
+            voiceStatusLabel={voiceStatusLabel}
+            onToggleMute={voice.toggleMute}
+            onVolumeChange={voice.setVolume}
           />
         )}
 

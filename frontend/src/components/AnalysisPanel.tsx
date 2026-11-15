@@ -5,10 +5,11 @@ import { useT } from '../i18n'
 
 interface AnalysisPanelProps {
   onToast: (msg: string) => void
+  onAnalyzed?: (report: AnalysisReport) => void
 }
 
-export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ onToast }) => {
-  const { t } = useT()
+export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ onToast, onAnalyzed }) => {
+  const { t, locale } = useT()
   const [minutes, setMinutes] = useState(60)
   const [report, setReport] = useState<AnalysisReport | null>(null)
   const [busy, setBusy] = useState(false)
@@ -39,9 +40,11 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ onToast }) => {
   const analyze = async () => {
     setBusy(true)
     try {
-      setReport(await api.analyze(minutes))
+      const next = await api.analyze(minutes, locale)
+      setReport(next)
       setError(false)
       onToast(t.analysis.done)
+      onAnalyzed?.(next)
     } catch {
       setError(true)
       onToast(t.analysis.fail)

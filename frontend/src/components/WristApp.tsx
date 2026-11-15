@@ -17,6 +17,11 @@ interface WristAppProps {
   onNotifyTeam: () => void
   isOffline?: boolean
   linkLive?: boolean
+  voiceMuted?: boolean
+  voiceVolume?: number
+  voiceStatusLabel?: string
+  onToggleMute?: () => void
+  onVolumeChange?: (v: number) => void
 }
 
 type WristScreen = 'estado' | 'signos' | 'detalle' | 'avisar' | 'rutina' | 'asistente'
@@ -33,6 +38,11 @@ export const WristApp: React.FC<WristAppProps> = ({
   onNotifyTeam,
   isOffline = false,
   linkLive = false,
+  voiceMuted = false,
+  voiceVolume = 0.85,
+  voiceStatusLabel,
+  onToggleMute,
+  onVolumeChange,
 }) => {
   const { t, tf, formatNumber } = useT()
   const [screen, setScreen] = useState<WristScreen>('estado')
@@ -468,6 +478,41 @@ export const WristApp: React.FC<WristAppProps> = ({
           </button>
         </div>
         <LangSwitcher />
+        {onToggleMute && (
+          <div
+            className="flex items-center gap-1.5 px-2 py-1 rounded-xl border"
+            style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
+          >
+            <button
+              type="button"
+              onClick={onToggleMute}
+              aria-label={voiceMuted ? t.voice.unmute : t.voice.mute}
+              title={voiceMuted ? t.voice.unmute : t.voice.mute}
+              className="px-2 py-1 text-[12px] font-medium cursor-pointer min-h-[36px]"
+              style={{ color: 'var(--text)' }}
+            >
+              {voiceMuted ? t.voice.unmute : t.voice.mute}
+            </button>
+            {onVolumeChange && (
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={voiceVolume}
+                onChange={(e) => onVolumeChange(Number(e.target.value))}
+                aria-label={t.voice.volume}
+                className="w-14 accent-[var(--accent)]"
+                disabled={voiceMuted}
+              />
+            )}
+            {voiceStatusLabel && (
+              <span className="text-[11px] font-mono" style={{ color: 'var(--text-muted)' }}>
+                {voiceStatusLabel}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <div

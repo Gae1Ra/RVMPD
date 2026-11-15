@@ -52,6 +52,28 @@ Open http://localhost:5173. Vite proxies `/api` and `/ws` to `http://localhost:8
 
 Use the scenario picker in the header (Nominal, Solar particle event, Hypoxia, Loose electrode, Fatigue). Switch language with **ES | EN** in the header or on the wrist view (choice is stored in `localStorage`, default Spanish).
 
+### Spoken alerts (ElevenLabs + browser fallback)
+
+Amber/red alerts and analysis summaries can be spoken automatically. Tap the discreet **enable voice** banner once (browsers block autoplay until a gesture). Mute with **M** or the header/wrist toggle; volume is stored in `localStorage`.
+
+Optional ElevenLabs (otherwise the UI uses `speechSynthesis`):
+
+| Variable | Effect |
+|---|---|
+| `ELEVENLABS_API_KEY` | API key (never commit) |
+| `ELEVENLABS_VOICE_ID_ES` / `ELEVENLABS_VOICE_ID_EN` | Voice ids from your ElevenLabs account |
+| `ELEVENLABS_MODEL` | Default `eleven_flash_v2_5` |
+| `VITALIS_TTS_CHAR_CAP` | Character spend cap (default `3000`; cache hits free) |
+
+```
+cd backend
+python scripts/tts_smoke_test.py          # one real call (needs .env)
+python scripts/pregenerate_tts.py         # fill disk cache for demo phrases
+```
+
+For demos in Chrome without the tap banner:  
+`chromium --autoplay-policy=no-user-gesture-required` (or the equivalent Chrome flag).
+
 ## Adding a language
 
 1. Copy `frontend/src/i18n/es.ts` to `frontend/src/i18n/<code>.ts` and translate every string (same keys).
