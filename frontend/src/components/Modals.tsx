@@ -36,32 +36,32 @@ export const NotifyModal: React.FC<NotifyModalProps> = ({
             onClick={onClose}
             aria-label="Cerrar ventana"
             className="w-9 h-9 rounded-lg border flex items-center justify-center cursor-pointer transition hover:opacity-80"
-            style={{ borderColor: 'var(--line)', color: 'var(--text)' }}
+            style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
           >
             ✕
           </button>
         </div>
-        <p className="text-[15px]" style={{ color: 'var(--text2)' }}>
+        <p className="text-[15px]" style={{ color: 'var(--text-muted)' }}>
           Se enviará la instantánea actual de los 6 signos vitales y el registro de eventos al médico de vuelo mediante el enlace local a bordo.
         </p>
         <div
           className="p-3 rounded-xl border font-mono text-[14px] tabular-nums"
-          style={{ background: 'var(--pill-bg)', borderColor: 'var(--line)' }}
+          style={{ background: 'var(--surface-data)', borderColor: 'var(--border)' }}
         >
           Perfil: A-01 · Día 42 · Preparación: <strong>{readiness}</strong>/100
         </div>
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-[10px] text-[14px] font-medium border cursor-pointer transition hover:opacity-80"
-            style={{ borderColor: 'var(--line)', color: 'var(--text)' }}
+            className="px-4 py-2 rounded-[12px] text-[14px] font-medium border cursor-pointer transition hover:bg-[var(--surface-hover)]"
+            style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
           >
             Cancelar
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 rounded-[10px] text-[14px] font-semibold text-white cursor-pointer transition hover:opacity-90"
-            style={{ background: 'var(--accent)' }}
+            className="px-4 py-2 rounded-[12px] text-[14px] font-semibold cursor-pointer transition hover:opacity-90"
+            style={{ background: 'var(--danger)', color: 'var(--on-accent)' }}
           >
             Confirmar envío
           </button>
@@ -117,7 +117,7 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
             <h3 id="missions-modal-title" className="text-[17px] font-bold">
               Rutinas diarias · A-01
             </h3>
-            <p className="text-[14px]" style={{ color: 'var(--text2)' }}>
+            <p className="text-[14px]" style={{ color: 'var(--text-muted)' }}>
               Posponer una rutina nunca resta progreso.
             </p>
           </div>
@@ -125,7 +125,7 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
             onClick={onClose}
             aria-label="Cerrar ventana"
             className="w-9 h-9 rounded-lg border flex items-center justify-center cursor-pointer transition hover:opacity-80"
-            style={{ borderColor: 'var(--line)', color: 'var(--text)' }}
+            style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
           >
             ✕
           </button>
@@ -135,8 +135,8 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
           <div
             className="p-3 rounded-xl border text-[14px]"
             style={{
-              background: 'var(--amber-bg)',
-              borderColor: 'var(--amber)',
+              background: 'var(--danger-bg)',
+              borderColor: 'var(--danger)',
               color: 'var(--text)',
             }}
           >
@@ -153,7 +153,7 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
                 className={`p-3 rounded-xl border flex items-center justify-between gap-2 ${
                   locked ? 'opacity-50' : ''
                 }`}
-                style={{ background: 'var(--pill-bg)', borderColor: 'var(--line)' }}
+                style={{ background: 'var(--surface-data)', borderColor: 'var(--border)' }}
               >
                 <div>
                   <div
@@ -163,18 +163,18 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
                   >
                     {m.title}
                   </div>
-                  <div className="font-mono text-[14px]" style={{ color: 'var(--text2)' }}>
+                  <div className="font-mono text-[14px]" style={{ color: 'var(--text-muted)' }}>
                     {locked ? 'Pausado por seguridad' : `+${m.xp} XP`}
                   </div>
                 </div>
                 <button
                   disabled={locked}
                   onClick={() => onToggleMission(m.id)}
-                  className="px-3 py-1.5 rounded-[10px] text-[14px] font-semibold border cursor-pointer transition hover:opacity-90 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 rounded-[12px] text-[14px] font-semibold border cursor-pointer transition hover:opacity-90 disabled:cursor-not-allowed"
                   style={{
-                    background: m.done ? 'var(--green)' : 'transparent',
-                    borderColor: 'var(--line)',
-                    color: m.done ? '#FFFFFF' : 'var(--text)',
+                    background: m.done ? 'var(--accent)' : 'transparent',
+                    borderColor: m.done ? 'var(--accent)' : 'var(--border)',
+                    color: m.done ? 'var(--on-accent)' : 'var(--text)',
                   }}
                 >
                   {m.done ? 'Completada' : 'Completar'}
@@ -186,15 +186,15 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
 
         <div
           className="flex items-center justify-between pt-2 border-t text-[14px] font-mono"
-          style={{ borderColor: 'var(--line)' }}
+          style={{ borderColor: 'var(--border)' }}
         >
           <span>
             Nivel: {getRank(xp)} · {currentLevelXp} / 200 XP
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-[10px] font-sans font-semibold text-white cursor-pointer transition hover:opacity-90"
-            style={{ background: 'var(--accent)' }}
+            className="px-4 py-2 rounded-[12px] font-sans font-semibold cursor-pointer transition hover:opacity-90"
+            style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
           >
             Listo
           </button>
@@ -235,7 +235,7 @@ export const IndicatorInfoModal: React.FC<IndicatorInfoModalProps> = ({
             onClick={onClose}
             aria-label="Cerrar ventana"
             className="w-9 h-9 rounded-lg border flex items-center justify-center cursor-pointer transition hover:opacity-80"
-            style={{ borderColor: 'var(--line)', color: 'var(--text)' }}
+            style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
           >
             ✕
           </button>
@@ -251,8 +251,8 @@ export const IndicatorInfoModal: React.FC<IndicatorInfoModalProps> = ({
         <div className="pt-2 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-[10px] text-[14px] font-semibold text-white cursor-pointer transition hover:opacity-90"
-            style={{ background: 'var(--accent)' }}
+            className="px-4 py-2 rounded-[12px] text-[14px] font-semibold cursor-pointer transition hover:opacity-90"
+            style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
           >
             Entendido
           </button>

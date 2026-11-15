@@ -28,20 +28,20 @@ export const Header: React.FC<HeaderProps> = ({
     if (simPhase === 'rising') {
       return {
         text: 'Simular recuperación',
-        borderColor: 'var(--red)',
-        color: 'var(--red)',
+        borderColor: 'var(--danger)',
+        color: 'var(--danger)',
       }
     }
     if (simPhase === 'recovering') {
       return {
         text: 'Detener simulación',
-        borderColor: 'var(--amber)',
-        color: 'var(--amber)',
+        borderColor: 'var(--danger)',
+        color: 'var(--danger)',
       }
     }
     return {
       text: 'Simular evento',
-      borderColor: 'var(--line)',
+      borderColor: 'var(--border)',
       color: 'var(--text)',
     }
   }
@@ -54,24 +54,23 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center gap-3">
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center border shrink-0 overflow-hidden"
-          style={{ borderColor: 'var(--line)', background: 'var(--pill-bg)' }}
+          style={{ borderColor: 'var(--border)', background: 'var(--pill-bg)' }}
           aria-hidden="true"
         >
-          {/* Logo VITALIS */}
+          {/* Logo VITALIS recortado en círculo (Página 12) */}
           <img
             src="/assets/vitalis-logo.svg"
             alt="VITALIS Logo"
-            className="w-6 h-6 object-contain"
+            className="w-7 h-7 object-contain"
             onError={(e) => {
-              // fallback if svg fails
               ;(e.target as HTMLElement).style.display = 'none'
             }}
           />
         </div>
-        <div className="flex items-center gap-2 text-[15px] sm:text-[16px] font-semibold tracking-tight">
-          <span>VITALIS</span>
-          <span style={{ color: 'var(--text2)' }}>·</span>
-          <span className="font-mono text-[14px] sm:text-[15px]" style={{ color: 'var(--text2)' }}>
+        <div className="flex items-center gap-2 text-[16px] font-bold tracking-tight">
+          <span className="tracking-wide">VITALIS</span>
+          <span style={{ color: 'var(--text-muted)' }}>·</span>
+          <span className="font-mono text-[14px]" style={{ color: 'var(--text-muted)' }}>
             A-01 · DÍA 42
           </span>
         </div>
@@ -82,7 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
         role="tablist"
         aria-label="Selector de rol"
         className="p-1 rounded-[12px] flex items-center gap-1 border"
-        style={{ background: 'var(--pill-bg)', borderColor: 'var(--line)' }}
+        style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
       >
         <button
           role="tab"
@@ -90,8 +89,8 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={() => onRoleChange('medico')}
           className="px-4 py-1.5 rounded-[10px] text-[14px] font-semibold transition cursor-pointer"
           style={{
-            background: role === 'medico' ? 'var(--pill-active)' : 'transparent',
-            color: 'var(--text)',
+            background: role === 'medico' ? 'var(--accent)' : 'transparent',
+            color: role === 'medico' ? 'var(--on-accent)' : 'var(--text)',
           }}
         >
           Médico
@@ -102,8 +101,8 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={() => onRoleChange('astronauta')}
           className="px-4 py-1.5 rounded-[10px] text-[14px] font-semibold transition cursor-pointer"
           style={{
-            background: role === 'astronauta' ? 'var(--pill-active)' : 'transparent',
-            color: 'var(--text)',
+            background: role === 'astronauta' ? 'var(--accent)' : 'transparent',
+            color: role === 'astronauta' ? 'var(--on-accent)' : 'var(--text)',
           }}
         >
           Astronauta
@@ -112,18 +111,18 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Derecha: Simulado · Reloj MET, Simular Evento, Selector de Superficie y Tema */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        <div className="font-mono tabular-nums text-[14px] flex items-center gap-1.5" style={{ color: 'var(--text2)' }}>
-          <span>Simulado</span>
+        <div className="font-mono tabular-nums text-[14px] flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
+          <span className="font-label text-[12px]">Simulado</span>
           <span>·</span>
-          <span className="font-medium" style={{ color: 'var(--text)' }}>
+          <span className="font-data" style={{ color: 'var(--text)' }}>
             {missionClock}
           </span>
         </div>
 
-        {/* Botón Simular Evento (Cicla: Nominal -> Evento Crítico -> Recuperación) */}
+        {/* Botón Simular Evento */}
         <button
           onClick={onCycleSim}
-          className="px-3.5 py-2 rounded-[11px] text-[14px] font-medium border transition cursor-pointer"
+          className="px-3.5 py-2 rounded-[12px] text-[14px] font-medium border transition cursor-pointer hover:bg-[var(--surface-hover)]"
           style={{
             background: 'var(--pill-bg)',
             borderColor: simBtn.borderColor,
@@ -135,16 +134,16 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Selector de Superficie: Panel | Muñeca */}
         <div
-          className="p-1 rounded-[11px] flex items-center gap-0.5 border"
-          style={{ background: 'var(--pill-bg)', borderColor: 'var(--line)' }}
+          className="p-1 rounded-[12px] flex items-center gap-0.5 border"
+          style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
           title="Alternar entre Panel Unificado (1280px) y Reloj de Muñeca"
         >
           <button
             onClick={() => onSurfaceChange('panel')}
             className="px-2.5 py-1 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
             style={{
-              background: surface === 'panel' ? 'var(--pill-active)' : 'transparent',
-              color: 'var(--text)',
+              background: surface === 'panel' ? 'var(--accent)' : 'transparent',
+              color: surface === 'panel' ? 'var(--on-accent)' : 'var(--text)',
             }}
           >
             Panel
@@ -153,8 +152,8 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => onSurfaceChange('wrist')}
             className="px-2.5 py-1 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
             style={{
-              background: surface === 'wrist' ? 'var(--pill-active)' : 'transparent',
-              color: 'var(--text)',
+              background: surface === 'wrist' ? 'var(--accent)' : 'transparent',
+              color: surface === 'wrist' ? 'var(--on-accent)' : 'var(--text)',
             }}
           >
             Muñeca
@@ -166,10 +165,10 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={onToggleTheme}
           aria-label="Cambiar tema claro u oscuro"
           title="Alternar tema oscuro / claro"
-          className="w-10 h-10 rounded-[11px] border flex items-center justify-center transition cursor-pointer"
+          className="w-10 h-10 rounded-[12px] border flex items-center justify-center transition cursor-pointer hover:bg-[var(--surface-hover)]"
           style={{
             background: 'var(--pill-bg)',
-            borderColor: 'var(--line)',
+            borderColor: 'var(--border)',
             color: 'var(--text)',
           }}
         >

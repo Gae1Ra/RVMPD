@@ -52,16 +52,36 @@ export const VitalsGrid: React.FC<VitalsGridProps> = ({
               isSelected ? 'vitalis-card-selected' : ''
             }`}
           >
-            {/* Fila superior: Forma + Nombre + Estado / Botón '?' */}
+            {/* Fila superior: Forma + Nombre + StatusBadge / Botón '?' */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <LevelShape level={level} size={15} />
                 <span className="text-[15px] font-semibold">{label}</span>
               </div>
+
               <div className="flex items-center gap-2">
-                <span className="text-[14px] font-medium" style={{ color: meta.colorVar }}>
-                  {meta.label}
-                </span>
+                {level === 3 ? (
+                  /* CRÍTICO: Badge lleno con texto on-accent (Página 9) */
+                  <span
+                    className="px-2 py-0.5 rounded-[8px] text-[13px] font-bold font-mono tracking-wider flex items-center gap-1.5"
+                    style={{
+                      background: 'var(--danger)',
+                      color: 'var(--on-accent)',
+                    }}
+                  >
+                    <LevelShape level={level} size={11} />
+                    {meta.label}
+                  </span>
+                ) : (
+                  /* NORMAL / OBSERVACIÓN / ADVERTENCIA: Forma + Palabra (Páginas 8-9) */
+                  <span
+                    className="text-[13px] font-semibold font-mono tracking-wider flex items-center gap-1.5"
+                    style={{ color: meta.colorVar }}
+                  >
+                    <LevelShape level={level} size={12} />
+                    {meta.label}
+                  </span>
+                )}
+
                 {isAstro && (
                   <button
                     type="button"
@@ -72,7 +92,7 @@ export const VitalsGrid: React.FC<VitalsGridProps> = ({
                     aria-label={`¿Qué mide ${ind.astroName}?`}
                     className="w-7 h-7 rounded-full border text-[14px] font-mono font-semibold flex items-center justify-center cursor-pointer transition hover:opacity-80"
                     style={{
-                      borderColor: 'var(--line)',
+                      borderColor: 'var(--border)',
                       background: 'var(--pill-bg)',
                       color: 'var(--text)',
                     }}
@@ -83,23 +103,23 @@ export const VitalsGrid: React.FC<VitalsGridProps> = ({
               </div>
             </div>
 
-            {/* Fila central: Valor tabular grande + Unidad + Rango individual */}
+            {/* Fila central: Valor tabular grande (40px) + Unidad + Rango individual */}
             <div className="flex items-baseline justify-between gap-2 my-1">
               <div className="flex items-baseline gap-1.5">
-                <span className="font-mono tabular-nums text-[36px] sm:text-[40px] font-semibold leading-none tracking-tight">
+                <span className="font-metric tabular-nums tracking-tight">
                   {valDisplay}
                 </span>
-                <span className="text-[15px] font-medium" style={{ color: 'var(--text2)' }}>
+                <span className="text-[15px] font-medium" style={{ color: 'var(--text-muted)' }}>
                   {ind.unit}
                 </span>
               </div>
-              <span className="font-mono tabular-nums text-[14px]" style={{ color: 'var(--text2)' }}>
+              <span className="font-mono tabular-nums text-[14px]" style={{ color: 'var(--text-muted)' }}>
                 {ind.rangeText}
               </span>
             </div>
 
             {/* Fila inferior: Subtítulo clínico o explicación llana en modo Astronauta */}
-            <div className="text-[14px] truncate" style={{ color: 'var(--text2)' }}>
+            <div className="text-[14px] truncate" style={{ color: 'var(--text-muted)' }}>
               {isAstro ? ind.plainDesc : ind.clinicalName}
             </div>
           </article>

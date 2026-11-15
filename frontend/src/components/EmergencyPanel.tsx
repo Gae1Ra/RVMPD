@@ -33,7 +33,7 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({
   return (
     <section
       className="vitalis-glass p-4 border-l-4"
-      style={{ borderLeftColor: 'var(--red)' }}
+      style={{ borderLeftColor: 'var(--danger)' }}
       aria-live="assertive"
     >
       {role === 'medico' ? (
@@ -43,16 +43,16 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({
             <div className="flex items-center gap-2">
               <span
                 className="inline-block w-3 h-3 rounded-[2px]"
-                style={{ background: 'var(--red)' }}
+                style={{ background: 'var(--danger)' }}
                 aria-hidden="true"
               />
-              <h2 className="text-[16px] font-bold uppercase tracking-wider" style={{ color: 'var(--red)' }}>
+              <h2 className="text-[16px] font-bold uppercase tracking-wider" style={{ color: 'var(--danger)' }}>
                 Evento Fisiológico Activo · Comparativa Previo vs. Ahora
               </h2>
             </div>
             <span
               className="font-mono text-[14px] px-2.5 py-0.5 rounded-lg"
-              style={{ background: 'var(--red-bg)', color: 'var(--red)' }}
+              style={{ background: 'var(--danger-bg)', color: 'var(--danger)' }}
             >
               {phaseBadgeText}
             </span>
@@ -60,15 +60,15 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Tabla Antes del evento vs. Ahora */}
-            <div className="lg:col-span-7 overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--line)' }}>
+            <div className="lg:col-span-7 overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--border)' }}>
               <table className="w-full text-left border-collapse text-[14px]">
                 <thead>
                   <tr
                     className="border-b"
                     style={{
-                      borderColor: 'var(--line)',
+                      borderColor: 'var(--border)',
                       background: 'var(--pill-bg)',
-                      color: 'var(--text2)',
+                      color: 'var(--text-muted)',
                     }}
                   >
                     <th className="py-2 px-3 font-medium">Parámetro</th>
@@ -77,7 +77,7 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({
                     <th className="py-2 px-3 font-medium font-mono">Cambio</th>
                   </tr>
                 </thead>
-                <tbody className="font-mono tabular-nums divide-y" style={{ borderColor: 'var(--line)' }}>
+                <tbody className="font-mono tabular-nums divide-y" style={{ borderColor: 'var(--border)' }}>
                   {indicators.map((ind) => {
                     const prevStr =
                       ind.id === 'pa'
@@ -91,12 +91,12 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({
                     const diffSign =
                       diff > 0 ? `+${formatEs(diff, ind.decimals)}` : formatEs(diff, ind.decimals)
                     const lvl = getIndicatorLevel(ind)
-                    const color = lvl > 0 ? getLevelMeta(lvl).colorVar : 'var(--text2)'
+                    const color = lvl > 0 ? getLevelMeta(lvl).colorVar : 'var(--text-muted)'
 
                     return (
                       <tr key={ind.id}>
                         <td className="py-1.5 px-3 font-sans font-medium">{ind.abbr}</td>
-                        <td className="py-1.5 px-3" style={{ color: 'var(--text2)' }}>
+                        <td className="py-1.5 px-3" style={{ color: 'var(--text-muted)' }}>
                           {prevStr} {ind.unit}
                         </td>
                         <td className="py-1.5 px-3 font-semibold">
@@ -115,23 +115,23 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({
             {/* Acción Recomendada + Registro de Intervenciones */}
             <div
               className="lg:col-span-5 flex flex-col justify-between gap-3 p-3.5 rounded-xl border"
-              style={{ borderColor: 'var(--line)', background: 'var(--pill-bg)' }}
+              style={{ borderColor: 'var(--border)', background: 'var(--surface-data)' }}
             >
               <div>
-                <div className="text-[14px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text2)' }}>
+                <div className="font-label text-[12px] mb-1" style={{ color: 'var(--text-muted)' }}>
                   Acción recomendada (Protocolo A bordo)
                 </div>
-                <p className="text-[14px]">
+                <p className="text-[14px] leading-relaxed">
                   Suspender actividad física, verificar hidratación y repetir medición de signos en 5 minutos.
                 </p>
               </div>
 
               {/* Registro de Intervención con Hora de Misión */}
-              <div className="pt-2 border-t" style={{ borderColor: 'var(--line)' }}>
+              <div className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
                 <label
                   htmlFor="intervention-input"
                   className="block text-[14px] font-medium mb-1.5"
-                  style={{ color: 'var(--text2)' }}
+                  style={{ color: 'var(--text-muted)' }}
                 >
                   Registrar intervención médica
                 </label>
@@ -145,20 +145,20 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({
                       if (e.key === 'Enter') handleAddIntervention()
                     }}
                     placeholder="Ej. Reposo sentado + 300 ml agua"
-                    className="flex-1 px-3 py-2 rounded-[10px] text-[14px] border bg-transparent"
-                    style={{ borderColor: 'var(--line)', color: 'var(--text)' }}
+                    className="flex-1 px-3 py-2 rounded-[12px] text-[14px] border bg-transparent"
+                    style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
                   />
                   <button
                     onClick={handleAddIntervention}
-                    className="px-3.5 py-2 rounded-[10px] text-[14px] font-semibold text-white cursor-pointer shrink-0"
-                    style={{ background: 'var(--accent)' }}
+                    className="px-3.5 py-2 rounded-[12px] text-[14px] font-semibold cursor-pointer shrink-0 transition hover:opacity-90"
+                    style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
                   >
                     Registrar
                   </button>
                 </div>
                 <ul
                   className="mt-2 space-y-1 text-[14px] font-mono tabular-nums max-h-20 overflow-y-auto"
-                  style={{ color: 'var(--text2)' }}
+                  style={{ color: 'var(--text-muted)' }}
                 >
                   {interventions.map((item, idx) => (
                     <li key={idx}>• {item}</li>
@@ -174,20 +174,20 @@ export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({
           <div className="flex items-center gap-3">
             <span
               className="inline-block w-3.5 h-3.5 rounded-[2px] shrink-0"
-              style={{ background: 'var(--red)' }}
+              style={{ background: 'var(--danger)' }}
               aria-hidden="true"
             />
             <div>
               <div className="text-[16px] font-bold">Haz una pausa y descansa ahora</div>
-              <p className="text-[14px]" style={{ color: 'var(--text2)' }}>
+              <p className="text-[14px]" style={{ color: 'var(--text-muted)' }}>
                 Tus pulsaciones y respiración subieron fuera de tu rango habitual. Siéntate, respira despacio y avisa al equipo médico.
               </p>
             </div>
           </div>
           <button
             onClick={onOpenNotifyModal}
-            className="px-4 py-2.5 rounded-[11px] text-[14px] font-semibold text-white cursor-pointer"
-            style={{ background: 'var(--red)' }}
+            className="px-4 py-2.5 rounded-[12px] text-[14px] font-semibold cursor-pointer transition hover:opacity-90 shadow-lg"
+            style={{ background: 'var(--danger)', color: 'var(--on-accent)' }}
           >
             Avisar ahora
           </button>

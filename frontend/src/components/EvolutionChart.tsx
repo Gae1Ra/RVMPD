@@ -37,7 +37,7 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
   const toY = (v: number) => padT + plotH - ((v - minV) / (maxV - minV)) * plotH
   const toX = (idx: number) => padL + (idx / Math.max(1, points.length - 1)) * plotW
 
-  // Coordenadas de la franja verde (rango individual)
+  // Coordenadas de la franja (rango individual con azul de acento)
   const refTopY = toY(indicator.ref[1])
   const refBotY = toY(indicator.ref[0])
   const refH = Math.max(4, refBotY - refTopY)
@@ -93,10 +93,10 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
           <h2 className="text-[16px] font-semibold">
             Evolución · <span style={{ color: 'var(--accent)' }}>{titleLabel}</span>
           </h2>
-          <div className="flex items-center gap-2 text-[14px] mt-0.5" style={{ color: 'var(--text2)' }}>
+          <div className="flex items-center gap-2 text-[14px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
             <span
               className="inline-block w-2.5 h-2.5 rounded-full"
-              style={{ background: 'var(--green)' }}
+              style={{ background: 'var(--accent)' }}
               aria-hidden="true"
             />
             <span>
@@ -105,12 +105,12 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
           </div>
         </div>
 
-        {/* Selector de Periodo: Vivo | 24h | 7d */}
+        {/* Selector de Periodo: Vivo | 24h | 7d (Página 9: Tabs con acento activo) */}
         <div
           role="tablist"
           aria-label="Rango temporal de evolución"
           className="p-1 rounded-[11px] flex items-center gap-1 border"
-          style={{ background: 'var(--pill-bg)', borderColor: 'var(--line)' }}
+          style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
         >
           {(['vivo', '24h', '7d'] as TimeRange[]).map((r) => (
             <button
@@ -123,11 +123,11 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
               }}
               className="px-3 py-1 rounded-[9px] text-[14px] font-medium transition cursor-pointer"
               style={{
-                background: timeRange === r ? 'var(--pill-active)' : 'transparent',
-                color: 'var(--text)',
+                background: timeRange === r ? 'var(--accent)' : 'transparent',
+                color: timeRange === r ? 'var(--on-accent)' : 'var(--text)',
               }}
             >
-              {r}
+              {r === '7d' ? '7 días' : r}
             </button>
           ))}
         </div>
@@ -148,8 +148,8 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
         >
           <defs>
             <linearGradient id="vitalisAreaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--green)" stopOpacity="0.24" />
-              <stop offset="100%" stopColor="var(--green)" stopOpacity="0.0" />
+              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.0" />
             </linearGradient>
           </defs>
 
@@ -163,16 +163,16 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
                   y1={ty}
                   x2={W - padR}
                   y2={ty}
-                  stroke="var(--line)"
+                  stroke="var(--border)"
                   strokeWidth="1"
                 />
                 <text
                   x={padL - 8}
                   y={ty + 4}
                   textAnchor="end"
-                  fill="var(--text2)"
+                  fill="var(--text-muted)"
                   fontFamily="IBM Plex Mono"
-                  fontSize="11"
+                  fontSize="12"
                 >
                   {formatEs(tv, indicator.decimals)}
                 </text>
@@ -180,14 +180,13 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
             )
           })}
 
-          {/* Franja Verde = Rango Individual */}
+          {/* Franja = Rango Individual con glow-blue (4 colores: negro, blanco, rojo y azul) */}
           <rect
             x={padL}
             y={refTopY}
             width={plotW}
             height={refH}
-            fill="var(--green)"
-            fillOpacity={0.16}
+            fill="var(--glow-blue)"
             rx={4}
           />
           <line
@@ -195,8 +194,8 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
             y1={refTopY}
             x2={W - padR}
             y2={refTopY}
-            stroke="var(--green)"
-            strokeOpacity={0.45}
+            stroke="var(--accent)"
+            strokeOpacity={0.35}
             strokeDasharray="4 4"
             strokeWidth="1"
           />
@@ -205,33 +204,33 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
             y1={refBotY}
             x2={W - padR}
             y2={refBotY}
-            stroke="var(--green)"
-            strokeOpacity={0.45}
+            stroke="var(--accent)"
+            strokeOpacity={0.35}
             strokeDasharray="4 4"
             strokeWidth="1"
           />
 
-          {/* Área y Línea de Serie */}
+          {/* Área y Línea de Serie (Azul de acento) */}
           {areaD && <path d={areaD} fill="url(#vitalisAreaGrad)" />}
           {lineD && (
             <path
               d={lineD}
               fill="none"
-              stroke="var(--green)"
+              stroke="var(--accent)"
               strokeWidth="2.2"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
           )}
 
-          {/* Marcadores de Evento (Rombo Ámbar) */}
+          {/* Marcadores de Evento (Rojo danger - Página 6) */}
           {coords
             .filter((c) => c.isEvent)
             .map((c, i) => (
               <polygon
                 key={i}
                 points={`${c.x},${c.y - 6} ${c.x + 6},${c.y} ${c.x},${c.y + 6} ${c.x - 6},${c.y}`}
-                fill="var(--amber)"
+                fill="var(--danger)"
               />
             ))}
 
@@ -265,9 +264,9 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
                 x={padL}
                 y={H - 5}
                 textAnchor="start"
-                fill="var(--text2)"
+                fill="var(--text-muted)"
                 fontFamily="IBM Plex Mono"
-                fontSize="11"
+                fontSize="12"
               >
                 {coords[0].label}
               </text>
@@ -275,9 +274,9 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
                 x={padL + plotW / 2}
                 y={H - 5}
                 textAnchor="middle"
-                fill="var(--text2)"
+                fill="var(--text-muted)"
                 fontFamily="IBM Plex Mono"
-                fontSize="11"
+                fontSize="12"
               >
                 {coords[Math.floor(coords.length / 2)]?.label}
               </text>
@@ -285,9 +284,9 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
                 x={W - padR}
                 y={H - 5}
                 textAnchor="end"
-                fill="var(--text2)"
+                fill="var(--text-muted)"
                 fontFamily="IBM Plex Mono"
-                fontSize="11"
+                fontSize="12"
               >
                 {coords[coords.length - 1].label}
               </text>
@@ -300,8 +299,8 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
           <div
             className="pointer-events-none absolute top-2 right-2 px-3 py-1.5 rounded-[10px] border text-[14px] font-mono tabular-nums"
             style={{
-              background: 'var(--glass)',
-              borderColor: 'var(--line)',
+              background: 'var(--surface-solid)',
+              borderColor: 'var(--border-strong)',
               color: 'var(--text)',
             }}
           >
@@ -310,7 +309,7 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
         )}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 text-[14px]" style={{ color: 'var(--text2)' }}>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-[14px]" style={{ color: 'var(--text-muted)' }}>
         <span>Dentro de tu rango individual el {pctInRange} % del periodo seleccionado.</span>
         <span className="font-mono text-[14px]">Teclado: ← → para explorar</span>
       </div>

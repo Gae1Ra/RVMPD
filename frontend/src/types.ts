@@ -52,11 +52,12 @@ export interface Mission {
 
 export interface LevelMeta {
   level: Level
-  label: 'Normal' | 'Observación' | 'Advertencia' | 'Crítico'
+  label: 'NORMAL' | 'OBSERVACIÓN' | 'ADVERTENCIA' | 'CRÍTICO' | 'Normal' | 'Observación' | 'Advertencia' | 'Crítico'
   globalTitle: 'Todo en orden' | 'En observación' | 'Haz una pausa' | 'Avisa ahora'
   colorVar: string
   bgVar: string
   shape: 'circle' | 'diamond' | 'triangle' | 'square'
+  isFilled?: boolean
 }
 
 // Legacy types (for backward compatibility with existing telemetry API/submodules)

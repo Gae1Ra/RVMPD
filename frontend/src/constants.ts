@@ -158,38 +158,42 @@ export function getLevelMeta(level: Level): LevelMeta {
     case 3:
       return {
         level: 3,
-        label: 'Crítico',
+        label: 'CRÍTICO',
         globalTitle: 'Avisa ahora',
-        colorVar: 'var(--red)',
-        bgVar: 'var(--red-bg)',
+        colorVar: 'var(--danger)',
+        bgVar: 'var(--danger)',
         shape: 'square',
+        isFilled: true,
       }
     case 2:
       return {
         level: 2,
-        label: 'Advertencia',
+        label: 'ADVERTENCIA',
         globalTitle: 'Haz una pausa',
-        colorVar: 'var(--amber)',
-        bgVar: 'var(--amber-bg)',
+        colorVar: 'var(--danger)',
+        bgVar: 'var(--danger-bg)',
         shape: 'triangle',
+        isFilled: false,
       }
     case 1:
       return {
         level: 1,
-        label: 'Observación',
+        label: 'OBSERVACIÓN',
         globalTitle: 'En observación',
-        colorVar: 'var(--blue)',
-        bgVar: 'var(--blue-bg)',
+        colorVar: 'var(--status-watch)',
+        bgVar: 'var(--surface-data)',
         shape: 'diamond',
+        isFilled: false,
       }
     default:
       return {
         level: 0,
-        label: 'Normal',
+        label: 'NORMAL',
         globalTitle: 'Todo en orden',
-        colorVar: 'var(--green)',
-        bgVar: 'var(--green-bg)',
+        colorVar: 'var(--accent)',
+        bgVar: 'var(--glow-blue)',
         shape: 'circle',
+        isFilled: false,
       }
   }
 }

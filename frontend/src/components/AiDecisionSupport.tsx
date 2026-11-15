@@ -47,7 +47,7 @@ export const AiDecisionSupport: React.FC<AiDecisionSupportProps> = ({
     hyp = `Estado basal estable en cabina; herramienta de apoyo sobre datos simulados sin diagnóstico clínico.`
   }
 
-  // Texto para Astronauta
+  // Texto para Astronauta (Páginas 2 y 3: Serena, precisa, cercana)
   const astroGuidance =
     maxLevel >= 2
       ? 'Tus pulsaciones y respiración están altas. Detén el ejercicio, descansa sentado y avisa al equipo médico.'
@@ -62,11 +62,11 @@ export const AiDecisionSupport: React.FC<AiDecisionSupportProps> = ({
         <div className="flex items-center justify-between gap-2 mb-2.5">
           <h2 className="text-[16px] font-semibold">IA Local · Apoyo a la decisión</h2>
           <span
-            className="font-mono text-[14px] px-2.5 py-0.5 rounded-lg border"
+            className="font-label text-[12px] px-2.5 py-0.5 rounded-lg border"
             style={{
               background: 'var(--pill-bg)',
-              borderColor: 'var(--line)',
-              color: 'var(--text2)',
+              borderColor: 'var(--border)',
+              color: 'var(--text-muted)',
             }}
           >
             A bordo
@@ -76,25 +76,25 @@ export const AiDecisionSupport: React.FC<AiDecisionSupportProps> = ({
         {role === 'medico' ? (
           /* Contenido IA para Rol Médico */
           <div className="space-y-2.5 text-[15px]">
-            <p className="leading-relaxed">
-              <strong>Observación:</strong> {obs}
+            <p className="font-secondary leading-relaxed">
+              <strong className="font-semibold text-[var(--text)]">Observación:</strong> {obs}
             </p>
-            <p className="leading-relaxed" style={{ color: 'var(--text2)' }}>
-              <strong>Hipótesis:</strong> {hyp}
+            <p className="font-secondary leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+              <strong className="font-semibold text-[var(--text)]">Hipótesis:</strong> {hyp}
             </p>
           </div>
         ) : (
           /* Contenido IA para Rol Astronauta */
           <div className="space-y-3 text-[15px]">
-            <p className="leading-relaxed">{astroGuidance}</p>
+            <p className="font-secondary leading-relaxed">{astroGuidance}</p>
 
             {/* Píldora de Siguiente Acción / Misión Diaria */}
             <div
               className="p-3 rounded-xl border flex items-center justify-between gap-2"
-              style={{ background: 'var(--pill-bg)', borderColor: 'var(--line)' }}
+              style={{ background: 'var(--surface-data)', borderColor: 'var(--border)' }}
             >
               <div>
-                <div className="text-[14px] font-medium" style={{ color: 'var(--text2)' }}>
+                <div className="font-label text-[12px]" style={{ color: 'var(--text-muted)' }}>
                   Siguiente acción
                 </div>
                 <div className="text-[15px] font-semibold">
@@ -107,16 +107,16 @@ export const AiDecisionSupport: React.FC<AiDecisionSupportProps> = ({
                 {nextMission && (
                   <button
                     onClick={onCompleteNextMission}
-                    className="px-3 py-1.5 rounded-[10px] text-[14px] font-semibold text-white cursor-pointer transition hover:opacity-90"
-                    style={{ background: 'var(--accent)' }}
+                    className="px-3.5 py-1.5 rounded-[12px] text-[14px] font-semibold cursor-pointer transition hover:opacity-90"
+                    style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
                   >
-                    Hecho
+                    Empezar · +{nextMission.xp} XP
                   </button>
                 )}
                 <button
                   onClick={onOpenMissionsModal}
-                  className="px-2.5 py-1.5 rounded-[10px] text-[14px] font-medium border cursor-pointer transition hover:opacity-90"
-                  style={{ borderColor: 'var(--line)', color: 'var(--text)' }}
+                  className="px-2.5 py-1.5 rounded-[12px] text-[14px] font-medium border cursor-pointer transition hover:bg-[var(--surface-hover)]"
+                  style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
                 >
                   Ver 5
                 </button>
@@ -128,36 +128,36 @@ export const AiDecisionSupport: React.FC<AiDecisionSupportProps> = ({
 
       {/* Botones de Consulta Rápida (Rol Médico) */}
       {role === 'medico' && (
-        <div className="flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: 'var(--line)' }}>
+        <div className="flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
           <button
             onClick={() => onAiQueryChange('resumen24h')}
-            className="px-3 py-1.5 rounded-[10px] text-[14px] font-medium border transition cursor-pointer"
+            className="px-3 py-1.5 rounded-[12px] text-[14px] font-medium border transition cursor-pointer"
             style={{
-              background: aiQuery === 'resumen24h' ? 'var(--pill-active)' : 'var(--pill-bg)',
-              borderColor: 'var(--line)',
-              color: 'var(--text)',
+              background: aiQuery === 'resumen24h' ? 'var(--accent)' : 'var(--pill-bg)',
+              borderColor: 'var(--border)',
+              color: aiQuery === 'resumen24h' ? 'var(--on-accent)' : 'var(--text)',
             }}
           >
             Resumen 24h
           </button>
           <button
             onClick={() => onAiQueryChange('tendencia')}
-            className="px-3 py-1.5 rounded-[10px] text-[14px] font-medium border transition cursor-pointer"
+            className="px-3 py-1.5 rounded-[12px] text-[14px] font-medium border transition cursor-pointer"
             style={{
-              background: aiQuery === 'tendencia' ? 'var(--pill-active)' : 'var(--pill-bg)',
-              borderColor: 'var(--line)',
-              color: 'var(--text)',
+              background: aiQuery === 'tendencia' ? 'var(--accent)' : 'var(--pill-bg)',
+              borderColor: 'var(--border)',
+              color: aiQuery === 'tendencia' ? 'var(--on-accent)' : 'var(--text)',
             }}
           >
             Evaluar tendencia
           </button>
           <button
             onClick={() => onAiQueryChange('protocolo')}
-            className="px-3 py-1.5 rounded-[10px] text-[14px] font-medium border transition cursor-pointer"
+            className="px-3 py-1.5 rounded-[12px] text-[14px] font-medium border transition cursor-pointer"
             style={{
-              background: aiQuery === 'protocolo' ? 'var(--pill-active)' : 'var(--pill-bg)',
-              borderColor: 'var(--line)',
-              color: 'var(--text)',
+              background: aiQuery === 'protocolo' ? 'var(--accent)' : 'var(--pill-bg)',
+              borderColor: 'var(--border)',
+              color: aiQuery === 'protocolo' ? 'var(--on-accent)' : 'var(--text)',
             }}
           >
             Protocolo activo

@@ -6,56 +6,68 @@
 }
 
 /* ==========================================================================
-   1. TOKENS VISUALES VITALIS v2 (OSCURO #101216 POR DEFECTO / CLARO #EEF1F5)
+   SISTEMA DE DISEÑO VITALIS · V1 NOVIEMBRE 2026
+   4 COLORES: NEGRO, BLANCO, ROJO Y AZUL.
    ========================================================================== */
+
+/* TEMA OSCURO «ÓRBITA» */
 :root {
   --bg: #101216;
+  --surface-solid: #161A21;
+  --surface-glass: rgba(255, 255, 255, 0.06);
+  --surface-data: rgba(0, 0, 0, 0.84);
   --text: #F2F4F7;
-  --text2: #B4BCC8;
-  --surface: rgba(255, 255, 255, 0.04);
-  --surface-hover: rgba(255, 255, 255, 0.07);
-  --glass: rgba(24, 27, 34, 0.72);
-  --line: rgba(255, 255, 255, 0.10);
-  --hi: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-  --pill-bg: rgba(255, 255, 255, 0.06);
-  --pill-active: rgba(255, 255, 255, 0.14);
-
-  /* Paleta Semántica Oscura */
-  --green: #7DB843;
-  --green-bg: rgba(125, 184, 67, 0.14);
-  --blue: #5B9FEE;
-  --blue-bg: rgba(91, 159, 238, 0.14);
-  --amber: #E6AD52;
-  --amber-bg: rgba(230, 173, 82, 0.15);
-  --red: #E05252;
-  --red-bg: rgba(224, 82, 82, 0.16);
+  --text-muted: #B4BCC8;
+  --text2: #B4BCC8; /* alias retrocompatible */
+  --border: rgba(255, 255, 255, 0.13);
+  --border-strong: rgba(255, 255, 255, 0.32);
+  --line: rgba(255, 255, 255, 0.13);
   --accent: #438FE8;
+  --on-accent: #101216;
+  --danger: #E05252;
+  --danger-bg: rgba(224, 82, 82, 0.16);
+  --status-watch: #F2F4F7;
+  --focus-ring: #438FE8;
+  --glow-blue: rgba(67, 143, 232, 0.22);
+
+  /* Superficies y sombras */
+  --glass: var(--surface-glass);
+  --surface: var(--surface-data);
+  --surface-hover: rgba(255, 255, 255, 0.08);
+  --hi: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.50);
+  --pill-bg: rgba(255, 255, 255, 0.06);
+  --pill-active: var(--accent);
 }
 
+/* TEMA CLARO «CABINA» */
 .theme-light {
   --bg: #EEF1F5;
+  --surface-solid: #FFFFFF;
+  --surface-glass: rgba(255, 255, 255, 0.62);
+  --surface-data: rgba(255, 255, 255, 0.92);
   --text: #101216;
-  --text2: #485160;
-  --surface: rgba(255, 255, 255, 0.72);
-  --surface-hover: rgba(255, 255, 255, 0.92);
-  --glass: rgba(255, 255, 255, 0.82);
-  --line: rgba(16, 18, 22, 0.10);
+  --text-muted: #485160;
+  --text2: #485160; /* alias retrocompatible */
+  --border: rgba(16, 18, 22, 0.14);
+  --border-strong: rgba(16, 18, 22, 0.40);
+  --line: rgba(16, 18, 22, 0.14);
+  --accent: #2567BD;
+  --on-accent: #FFFFFF;
+  --danger: #B83232;
+  --danger-bg: rgba(184, 50, 50, 0.12);
+  --status-watch: #101216;
+  --focus-ring: #2567BD;
+  --glow-blue: rgba(37, 103, 189, 0.20);
+
+  /* Superficies y sombras */
+  --glass: var(--surface-glass);
+  --surface: var(--surface-data);
+  --surface-hover: rgba(255, 255, 255, 0.98);
   --hi: inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
   --shadow: 0 8px 24px rgba(16, 18, 22, 0.06);
   --pill-bg: rgba(16, 18, 22, 0.06);
-  --pill-active: #FFFFFF;
-
-  /* Paleta Semántica Clara (mayor contraste) */
-  --green: #47761B;
-  --green-bg: rgba(71, 118, 27, 0.12);
-  --blue: #2567BD;
-  --blue-bg: rgba(37, 103, 189, 0.12);
-  --amber: #875A08;
-  --amber-bg: rgba(135, 90, 8, 0.12);
-  --red: #B83232;
-  --red-bg: rgba(184, 50, 50, 0.12);
-  --accent: #2567BD;
+  --pill-active: var(--accent);
 }
 
 * {
@@ -70,7 +82,78 @@ body {
   font-size: 16px;
   line-height: 1.45;
   min-height: 100vh;
-  transition: background-color 0.25s ease, color 0.25s ease;
+  transition: background-color 0.20s cubic-bezier(0.2, 0.7, 0.2, 1), color 0.20s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* ==========================================================================
+   TIPOGRAFÍA (PÁGINA 7)
+   Archivo para leer, IBM Plex Mono para medir.
+   ========================================================================== */
+.font-hero {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-stretch: 112%;
+  font-size: 76px;
+  line-height: 1;
+}
+
+.font-heading {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-stretch: 112%;
+  font-size: 44px;
+  line-height: 1.1;
+}
+
+.font-metric {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-stretch: 112%;
+  font-size: 40px;
+  line-height: 1;
+}
+
+.font-title {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 700;
+  font-stretch: 108%;
+  font-size: 30px;
+  line-height: 1.2;
+}
+
+.font-subtitle {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.font-body {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.font-secondary {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.font-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.font-data {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  font-size: 16px;
 }
 
 /* Cifras tabulares estrictas en toda la interfaz */
@@ -79,28 +162,32 @@ body {
   font-feature-settings: "tnum" 1, "zero" 1;
 }
 
-/* Superficies Glassmorphism sobrio (radio 16px, borde 1px, sin neón) */
+/* ==========================================================================
+   SUPERFICIES (PÁGINA 8)
+   Cristal para lo ambiental, superficie sólida/data para los datos.
+   ========================================================================== */
 .vitalis-glass {
-  background: var(--glass);
+  background: var(--surface-glass);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   box-shadow: var(--hi), var(--shadow);
   border-radius: 16px;
 }
 
 .vitalis-surface {
-  background: var(--surface);
+  background: var(--surface-data);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   box-shadow: var(--hi);
   border-radius: 16px;
-  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+  transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .vitalis-surface:hover {
   background: var(--surface-hover);
+  border-color: var(--border-strong);
 }
 
 .vitalis-card-selected {
@@ -108,11 +195,11 @@ body {
   box-shadow: var(--hi), 0 0 0 1px var(--accent);
 }
 
-/* Accesibilidad: Foco visible 2px en --accent */
+/* Accesibilidad: Foco visible de 2px en focus-ring, separado 2px */
 button:focus-visible,
 input:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -128,12 +215,17 @@ input:focus-visible,
 
 /* Respaldo para navegadores sin backdrop-filter */
 @supports not (backdrop-filter: blur(24px)) {
-  .vitalis-glass, .vitalis-surface {
-    background: var(--bg);
+  .vitalis-glass {
+    background: var(--surface-solid);
+  }
+  .vitalis-surface {
+    background: var(--surface-solid);
   }
 }
 
-/* Wrist simulator frame */
+/* ==========================================================================
+   UI DE MUÑECA (WRIST HARDWARE FRAMES)
+   ========================================================================== */
 .wrist-wrapper {
   display: flex;
   flex-direction: column;

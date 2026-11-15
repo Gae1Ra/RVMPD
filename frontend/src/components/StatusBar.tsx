@@ -19,7 +19,6 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   onOpenNotifyModal,
 }) => {
   const meta = getLevelMeta(globalLevel)
-
   const isAlertActive = globalLevel >= 2
 
   return (
@@ -32,17 +31,17 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 
         <div className="flex flex-wrap items-baseline gap-2 text-[15px] sm:text-[16px]">
           <span
-            className="font-semibold"
+            className="font-semibold tracking-tight"
             style={{ color: globalLevel > 0 ? meta.colorVar : 'var(--text)' }}
           >
             {meta.globalTitle}
           </span>
-          <span style={{ color: 'var(--text2)' }}>·</span>
-          <span className="font-mono tabular-nums text-[14px] sm:text-[15px]" style={{ color: 'var(--text2)' }}>
-            Preparación <strong style={{ color: 'var(--text)' }}>{readiness}</strong>
+          <span style={{ color: 'var(--text-muted)' }}>·</span>
+          <span className="font-mono tabular-nums text-[14px] sm:text-[15px]" style={{ color: 'var(--text-muted)' }}>
+            Preparación <strong className="font-data" style={{ color: 'var(--text)' }}>{readiness}</strong>
           </span>
-          <span style={{ color: 'var(--text2)' }}>·</span>
-          <span className="font-mono tabular-nums text-[14px]" style={{ color: 'var(--text2)' }}>
+          <span style={{ color: 'var(--text-muted)' }}>·</span>
+          <span className="font-mono tabular-nums text-[14px]" style={{ color: 'var(--text-muted)' }}>
             hace {dataAgeSeconds} s
           </span>
         </div>
@@ -52,19 +51,19 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       <div className="flex items-center gap-2.5">
         <button
           onClick={onExportCsv}
-          className="px-3.5 py-2 rounded-[11px] text-[14px] font-medium border transition cursor-pointer"
-          style={{ background: 'var(--pill-bg)', borderColor: 'var(--line)', color: 'var(--text)' }}
+          className="px-3.5 py-2 rounded-[12px] text-[14px] font-medium border transition cursor-pointer hover:bg-[var(--surface-hover)]"
+          style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
         >
           Exportar CSV
         </button>
 
         <button
           onClick={onOpenNotifyModal}
-          className="px-4 py-2 rounded-[11px] text-[14px] font-semibold border transition cursor-pointer"
+          className="px-4 py-2 rounded-[12px] text-[14px] font-semibold border transition cursor-pointer"
           style={{
-            background: isAlertActive ? meta.colorVar : 'var(--pill-bg)',
-            borderColor: isAlertActive ? meta.colorVar : 'var(--line)',
-            color: isAlertActive ? '#FFFFFF' : 'var(--text)',
+            background: isAlertActive ? 'var(--danger)' : 'var(--pill-bg)',
+            borderColor: isAlertActive ? 'var(--danger)' : 'var(--border)',
+            color: isAlertActive ? 'var(--on-accent)' : 'var(--text)',
           }}
         >
           Avisar equipo
