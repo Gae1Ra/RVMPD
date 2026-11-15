@@ -51,8 +51,8 @@ export const Header: React.FC<HeaderProps> = ({
         : t.voice.statusBrowser
 
   return (
-    <header className="vitalis-glass px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-3 min-w-0">
+    <header className="vitalis-glass header-shell px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="header-brand flex items-center gap-3 min-w-0">
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center border shrink-0 overflow-hidden"
           style={{ borderColor: 'var(--border)', background: 'var(--pill-bg)' }}
@@ -79,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div
         role="tablist"
         aria-label={t.roles.tablist}
-        className="p-1 rounded-[12px] flex items-center gap-1 border w-full sm:w-auto"
+        className="header-roles p-1 rounded-[12px] flex items-center gap-1 border w-full sm:w-auto"
         style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
       >
         <button
@@ -108,8 +108,8 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-        <div className="font-mono tabular-nums text-[14px] flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
+      <div className="header-tools flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
+        <div className="header-mission font-mono tabular-nums text-[14px] flex items-center gap-1.5 shrink-0" style={{ color: 'var(--text-muted)' }}>
           <span className="font-label text-[12px]">{linkLabel}</span>
           <span>·</span>
           <span className="font-data" style={{ color: 'var(--text)' }}>
@@ -117,106 +117,110 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </div>
 
-        <ScenarioSelector current={scenarioId} onSelect={onSetScenario} />
-
-        <LangSwitcher />
-
-        {onToggleMute && (
-          <div
-            className="flex items-center gap-1.5 px-2 py-1 rounded-[12px] border"
-            style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
-          >
-            <button
-              type="button"
-              onClick={onToggleMute}
-              aria-label={voiceMuted ? t.voice.unmute : t.voice.mute}
-              title={voiceMuted ? t.voice.unmute : t.voice.mute}
-              className="touch-target w-9 h-9 rounded-[8px] flex items-center justify-center cursor-pointer"
-              style={{ color: 'var(--text)' }}
-            >
-              {voiceMuted ? (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" />
-                  <path strokeLinecap="round" d="M23 9l-6 6M17 9l6 6" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" />
-                  <path strokeLinecap="round" d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07" />
-                </svg>
-              )}
-            </button>
-            {onVolumeChange && (
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={voiceVolume}
-                onChange={(e) => onVolumeChange(Number(e.target.value))}
-                aria-label={t.voice.volume}
-                className="w-16 accent-[var(--accent)]"
-                disabled={voiceMuted}
-              />
-            )}
-            <span className="font-mono text-[11px] whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
-              {voiceStatus}
-            </span>
-          </div>
-        )}
-
-        <div
-          className="p-1 rounded-[12px] flex items-center gap-0.5 border"
-          style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
-          title={t.surfaces.title}
-        >
-          <button
-            onClick={() => onSurfaceChange('panel')}
-            className="touch-target px-3 py-2 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
-            style={{
-              background: surface === 'panel' ? 'var(--accent)' : 'transparent',
-              color: surface === 'panel' ? 'var(--on-accent)' : 'var(--text)',
-            }}
-          >
-            {t.surfaces.panel}
-          </button>
-          <button
-            onClick={() => onSurfaceChange('wrist')}
-            className="touch-target px-3 py-2 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
-            style={{
-              background: surface === 'wrist' ? 'var(--accent)' : 'transparent',
-              color: surface === 'wrist' ? 'var(--on-accent)' : 'var(--text)',
-            }}
-          >
-            {t.surfaces.wrist}
-          </button>
+        <div className="header-scenarios w-full min-w-0">
+          <ScenarioSelector current={scenarioId} onSelect={onSetScenario} />
         </div>
 
-        <button
-          onClick={onToggleTheme}
-          aria-label={t.theme.toggle}
-          title={t.theme.title}
-          className="touch-target w-11 h-11 rounded-[12px] border flex items-center justify-center transition cursor-pointer hover:bg-[var(--surface-hover)]"
-          style={{
-            background: 'var(--pill-bg)',
-            borderColor: 'var(--border)',
-            color: 'var(--text)',
-          }}
-        >
-          {theme === 'dark' ? (
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="4" />
-              <path
-                strokeLinecap="round"
-                d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"
-              />
-            </svg>
-          ) : (
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
-            </svg>
+        <div className="header-controls flex flex-wrap items-center gap-2 w-full min-w-0">
+          <LangSwitcher />
+
+          {onToggleMute && (
+            <div
+              className="header-voice flex items-center gap-1.5 px-2 py-1 rounded-[12px] border min-w-0 flex-1 sm:flex-none"
+              style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
+            >
+              <button
+                type="button"
+                onClick={onToggleMute}
+                aria-label={voiceMuted ? t.voice.unmute : t.voice.mute}
+                title={voiceMuted ? t.voice.unmute : t.voice.mute}
+                className="touch-target w-9 h-9 rounded-[8px] flex items-center justify-center cursor-pointer shrink-0"
+                style={{ color: 'var(--text)' }}
+              >
+                {voiceMuted ? (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" />
+                    <path strokeLinecap="round" d="M23 9l-6 6M17 9l6 6" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" />
+                    <path strokeLinecap="round" d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07" />
+                  </svg>
+                )}
+              </button>
+              {onVolumeChange && (
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={voiceVolume}
+                  onChange={(e) => onVolumeChange(Number(e.target.value))}
+                  aria-label={t.voice.volume}
+                  className="w-16 min-w-0 flex-1 accent-[var(--accent)]"
+                  disabled={voiceMuted}
+                />
+              )}
+              <span className="font-mono text-[11px] whitespace-nowrap truncate" style={{ color: 'var(--text-muted)' }}>
+                {voiceStatus}
+              </span>
+            </div>
           )}
-        </button>
+
+          <div
+            className="header-surface p-1 rounded-[12px] flex items-center gap-0.5 border shrink-0"
+            style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
+            title={t.surfaces.title}
+          >
+            <button
+              onClick={() => onSurfaceChange('panel')}
+              className="touch-target px-3 py-2 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
+              style={{
+                background: surface === 'panel' ? 'var(--accent)' : 'transparent',
+                color: surface === 'panel' ? 'var(--on-accent)' : 'var(--text)',
+              }}
+            >
+              {t.surfaces.panel}
+            </button>
+            <button
+              onClick={() => onSurfaceChange('wrist')}
+              className="touch-target px-3 py-2 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
+              style={{
+                background: surface === 'wrist' ? 'var(--accent)' : 'transparent',
+                color: surface === 'wrist' ? 'var(--on-accent)' : 'var(--text)',
+              }}
+            >
+              {t.surfaces.wrist}
+            </button>
+          </div>
+
+          <button
+            onClick={onToggleTheme}
+            aria-label={t.theme.toggle}
+            title={t.theme.title}
+            className="touch-target w-11 h-11 rounded-[12px] border flex items-center justify-center transition cursor-pointer hover:bg-[var(--surface-hover)] shrink-0"
+            style={{
+              background: 'var(--pill-bg)',
+              borderColor: 'var(--border)',
+              color: 'var(--text)',
+            }}
+          >
+            {theme === 'dark' ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="4" />
+                <path
+                  strokeLinecap="round"
+                  d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"
+                />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
     </header>
   )

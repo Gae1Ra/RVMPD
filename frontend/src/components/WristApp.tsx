@@ -521,12 +521,12 @@ export const WristApp: React.FC<WristAppProps> = ({
             ? 'wrist-frame-square'
             : preset === 'round'
               ? 'wrist-frame-round'
-              : 'w-full max-w-[440px] h-[520px] rounded-[36px] border border-[var(--border)] shadow-2xl relative overflow-hidden bg-[var(--bg)]'
+              : 'wrist-frame-soft w-full max-w-[440px] h-[520px] rounded-[36px] border border-[var(--border)] shadow-2xl relative overflow-hidden bg-[var(--bg)]'
         }
       >
         {isOffline && (
           <div
-            className="w-full text-center py-1 text-[12px] font-medium font-mono z-40"
+            className="wrist-offline-banner w-full text-center py-1 text-[12px] font-medium font-mono shrink-0 z-40"
             style={{ background: 'var(--danger)', color: 'var(--on-accent)' }}
           >
             {tf(t.wrist.offline, { n: dataAgeSeconds })}
@@ -565,10 +565,10 @@ export const WristApp: React.FC<WristAppProps> = ({
           </div>
         )}
 
-        <div className="h-[calc(100%-54px)] overflow-hidden">{renderContent()}</div>
+        <div className="wrist-screen flex-1 min-h-0 overflow-hidden">{renderContent()}</div>
 
         <nav
-          className="h-[54px] border-t flex items-center justify-around px-2 z-30"
+          className="wrist-nav h-[54px] shrink-0 border-t flex items-center justify-around px-2 z-30"
           style={{ background: 'var(--surface-solid)', borderColor: 'var(--border)' }}
         >
           {(
