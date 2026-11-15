@@ -15,7 +15,7 @@ import {
   getIndicatorLevel,
 } from './constants'
 import { useT } from './i18n'
-import { localizeIndicators, localizeMissions } from './i18n/localize'
+import { localizeAlerts, localizeIndicators, localizeMissions } from './i18n/localize'
 import { Header } from './components/Header'
 import { StatusBar } from './components/StatusBar'
 import { EmergencyPanel } from './components/EmergencyPanel'
@@ -131,7 +131,7 @@ export default function App() {
     if (fresh.length > 0) {
       for (const a of fresh) spokenAlertIdsRef.current.add(a.id)
       hadAlertRef.current = true
-      speakAlertBatch(fresh)
+      speakAlertBatch(localizeAlerts(fresh, locale))
     }
     // Drop ids that are no longer active so a re-fire later can speak again (anti-repeat still applies).
     const activeIds = new Set(actionable.map((a) => a.id))
@@ -142,7 +142,7 @@ export default function App() {
       hadAlertRef.current = false
       speakNormalized()
     }
-  }, [frame, history, speakAlertBatch, speakNormalized])
+  }, [frame, history, locale, speakAlertBatch, speakNormalized])
 
   // Age of last frame for StatusBar / wrist offline banner.
   useEffect(() => {
@@ -347,7 +347,7 @@ export default function App() {
                 interventions={interventions}
                 onLogIntervention={handleLogIntervention}
                 onOpenNotifyModal={() => setIsNotifyOpen(true)}
-                alerts={frame?.alerts ?? []}
+                alerts={localizeAlerts(frame?.alerts ?? [], locale)}
               />
             )}
 

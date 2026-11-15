@@ -39,6 +39,7 @@ export const en: Dictionary = {
   lang: {
     es: 'ES',
     en: 'EN',
+    fr: 'FR',
     selector: 'Language',
   },
   status: {
