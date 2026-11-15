@@ -87,8 +87,9 @@ Check-ins (`/api/checkin`, `/api/checkins`) keep the same shape but are now stor
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| POST | `/api/analysis` | `{"minutes": 60}` (optional, default 60) | a new report, see below |
+| POST | `/api/analysis` | `{"minutes": 60, "lang": "en"}` (both optional; `lang` is `"en"` or `"es"`, default `"en"`) | a new report, see below |
 | GET | `/api/analysis/latest` | | the newest report, or 404 if none exists |
+| GET | `/api/analysis/engine` | | provider status (no network): see below |
 
 ```json
 {
@@ -119,3 +120,87 @@ Rules:
 - `findings` may be empty; then `summary` says that nothing unusual was found. At most 5 findings, most likely first.
 - `facts` holds 2 to 6 short observations from the stored data (trends, averages, links between measurements).
 - If the language model is not configured or fails, the backend returns the local report. It never returns an error because of the model.
+- Optional `lang` on POST `/api/analysis`: `"en"` (default) or `"es"`. When the model runs with `"es"`, it is asked for a Spanish narrative with the same JSON schema (numbers stay untranslated). The local rule engine always stays English.
+- Optional refinement uses Anthropic API or AWS Bedrock Mantle (`VITALIS_USE_BEDROCK=1` + `AWS_BEARER_TOKEN_BEDROCK`). The model receives aggregates only, never raw readings. Spend is capped (`VITALIS_SPEND_CAP_USD`, default 0.50) and rate-limited (1 call / 30 s, 100 / process).
+
+`GET /api/analysis/engine` (no network):
+
+```json
+{
+  "provider": "local",
+  "model": null,
+  "configured": false,
+  "spent_usd": 0.0,
+  "cap_usd": 0.5
+}
+```
+
+- `provider` is `local`, `bedrock`, or `anthropic`.
+- `configured` is true when a model path is selected via env vars (does not prove the key works).
+- `spent_usd` is cumulative estimated spend from token usage stored in SQLite; `cap_usd` is the hard cap.
+
+## Spoken alerts (TTS)
+
+Optional ElevenLabs text-to-speech for spoken diagnostics. When the key/voices are missing, the spend cap is hit, or the network fails, the API returns a clear browser-fallback payload so the client can use `speechSynthesis`.
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| POST | `/api/tts` | `{"text": str, "lang": "es"\|"en"}` | MP3 audio (`audio/mpeg`), or 503 fallback JSON |
+| GET | `/api/tts/status` | | provider readiness and character spend (no network) |
+
+`POST /api/tts` success: raw MP3 bytes. Soft failures return **503** with:
+
+```json
+{"fallback": "browser", "reason": "missing_key"}
+```
+
+Known `reason` values: `missing_key`, `missing_voice`, `char_cap`, `text_too_long`, `empty_text`, `timeout`, `network`, `invalid_key`, `quota`. Max **500** characters per request. Characters are counted only on ElevenLabs cache misses; hits under `backend/data/tts_cache/` spend nothing.
+
+`GET /api/tts/status` (no network):
+
+```json
+{
+  "provider": "elevenlabs",
+  "configured": true,
+  "chars_used": 120,
+  "chars_cap": 3000
+}
+```
+
+- `provider` is `elevenlabs` when `ELEVENLABS_API_KEY` and both voice ids are set, otherwise `browser`.
+- `configured` does not prove the key works.
+- `chars_used` / `chars_cap` track characters sent to ElevenLabs (SQLite); default cap `VITALIS_TTS_CHAR_CAP=3000`.
+
+## Medical AI (additive appendix — proposed)
+
+Optional routes for the contained medical AI template (`docs/AI_MEDICAL.md`).
+Existing clients ignore them. The WebSocket `frame` shape is unchanged.
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| GET | `/api/medical-ai/status` | | feature flag / provider readiness (no model call) |
+| POST | `/api/medical-ai/insight` | optional vitals snapshot + `force` (bool) | structured insight below |
+
+```json
+{
+  "risk_level": "low",
+  "findings": "Plain-language clinical finding from filtered vitals.",
+  "recommended_action": "One short recommended action.",
+  "sources": ["onboard://protocols/vital-thresholds-v1.md"],
+  "provider": "mock",
+  "model": "vitalis-mock-v1",
+  "invoked": true,
+  "anomaly_detected": true,
+  "patient_id": "A-01",
+  "disclaimer": "Decision support, not a medical diagnosis."
+}
+```
+
+Rules:
+
+- `risk_level` is one of `low`, `medium`, `high` (maps to guide BAJO / MEDIO / ALTO in the UI).
+- `provider` is `mock`, `bedrock`, or `disabled` (feature flag off).
+- `invoked` is true only when a provider actually ran. Nominal vitals skip the model unless `force` is true (cost guardrail).
+- `sources` lists protocol / KB citation URIs when available; may be empty.
+- Request body fields (`hr`, `spo2`, `temp`, …) are optional; omitted fields are taken from the live engine snapshot.
+- This path stays separate from `/api/analysis` (window trends) by design — see `DECISIONES.md` §9. Both coexist; do not fold insight fields into the analysis report.

@@ -34,6 +34,14 @@ export interface Indicator {
   plainDesc: string
   whatMeasures: string
   whenNotify: string
+  /** From CONTRACT Vital when telemetry is connected */
+  baseline?: number
+  delta?: number
+  sqi?: number
+  status?: Status
+  /** True when an active alert for this metric has origin === 'artifact' */
+  artifact?: boolean
+  metricKey?: MetricKey
 }
 
 export interface SeriesPoint {
@@ -52,8 +60,8 @@ export interface Mission {
 
 export interface LevelMeta {
   level: Level
-  label: 'NORMAL' | 'OBSERVACIÓN' | 'ADVERTENCIA' | 'CRÍTICO' | 'Normal' | 'Observación' | 'Advertencia' | 'Crítico'
-  globalTitle: 'Todo en orden' | 'En observación' | 'Haz una pausa' | 'Avisa ahora'
+  label: string
+  globalTitle: string
   colorVar: string
   bgVar: string
   shape: 'circle' | 'diamond' | 'triangle' | 'square'
@@ -184,4 +192,45 @@ export interface AnalysisReport {
   facts: string[]
   data_points: number
   disclaimer: string
+}
+
+/** Additive medical AI insight (docs/CONTRACT.md appendix + docs/AI_MEDICAL.md). */
+export type RiskLevel = 'low' | 'medium' | 'high'
+export type MedicalAiProviderId = 'mock' | 'bedrock' | 'disabled'
+
+export interface MedicalInsight {
+  risk_level: RiskLevel
+  findings: string
+  recommended_action: string
+  sources: string[]
+  provider: MedicalAiProviderId
+  model: string | null
+  invoked: boolean
+  anomaly_detected: boolean
+  patient_id: string
+  disclaimer: string
+}
+
+export interface MedicalAiStatus {
+  enabled: boolean
+  provider: string
+  region: string
+  knowledge_base_id_set: boolean
+  guardrail_id_set: boolean
+  model_arn: string | null
+  note: string
+}
+
+export interface MedicalAiRequest {
+  patient_id?: string
+  force?: boolean
+  hr?: number
+  spo2?: number
+  temp?: number
+  resp_rate?: number
+  hrv_rmssd?: number
+  bp_sys?: number
+  scenario?: string
+  global_status?: Status
+  alert_titles?: string[]
 }

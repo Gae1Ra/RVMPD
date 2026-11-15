@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react'
 import type { Indicator, Role, SeriesPoint, TimeRange } from '../types'
-import { formatEs } from '../constants'
+import { useT } from '../i18n'
 
 interface EvolutionChartProps {
   indicator: Indicator
@@ -17,6 +17,7 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
   points,
   onTimeRangeChange,
 }) => {
+  const { t, tf, formatNumber } = useT()
   const [scrubIndex, setScrubIndex] = useState<number | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
 
@@ -37,12 +38,10 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
   const toY = (v: number) => padT + plotH - ((v - minV) / (maxV - minV)) * plotH
   const toX = (idx: number) => padL + (idx / Math.max(1, points.length - 1)) * plotW
 
-  // Coordenadas de la franja (rango individual con azul de acento)
   const refTopY = toY(indicator.ref[1])
   const refBotY = toY(indicator.ref[0])
   const refH = Math.max(4, refBotY - refTopY)
 
-  // Coordenadas de la serie
   const coords = points.map((p, idx) => ({
     x: toX(idx),
     y: toY(p.val),
@@ -50,21 +49,19 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
   }))
 
   const lineD = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ')
-  const areaD = coords.length > 0
-    ? `${lineD} L ${coords[coords.length - 1].x.toFixed(1)} ${(padT + plotH).toFixed(1)} L ${coords[0].x.toFixed(1)} ${(padT + plotH).toFixed(1)} Z`
-    : ''
+  const areaD =
+    coords.length > 0
+      ? `${lineD} L ${coords[coords.length - 1].x.toFixed(1)} ${(padT + plotH).toFixed(1)} L ${coords[0].x.toFixed(1)} ${(padT + plotH).toFixed(1)} Z`
+      : ''
 
-  // Porcentaje dentro del rango individual
   const inRangeCount = points.filter((p) => p.val >= indicator.ref[0] && p.val <= indicator.ref[1]).length
   const pctInRange = points.length > 0 ? Math.round((inRangeCount / points.length) * 100) : 100
 
-  // Líneas guía horizontales
   const midV = Number(((minV + maxV) / 2).toFixed(indicator.decimals))
   const yTicks = [maxV, midV, minV]
 
-  // Punto activo
   const activeIdx = scrubIndex !== null && scrubIndex < coords.length ? scrubIndex : coords.length - 1
-  const activePt = coords[activeIdx] || { x: padL, y: padT + plotH / 2, val: indicator.base, label: 'Ahora' }
+  const activePt = coords[activeIdx] || { x: padL, y: padT + plotH / 2, val: indicator.base, label: t.chart.now }
 
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!svgRef.current || coords.length === 0) return
@@ -86,29 +83,53 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
     }
   }
 
+  const rangeLabel = (r: TimeRange) => (r === 'vivo' ? t.chart.vivo : r === '24h' ? t.chart.h24 : t.chart.d7)
+
   return (
     <div className="lg:col-span-7 vitalis-surface p-4 flex flex-col justify-between gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-[16px] font-semibold">
-            Evolución · <span style={{ color: 'var(--accent)' }}>{titleLabel}</span>
+            {t.chart.title.includes('{name}')
+              ? t.chart.title.split('{name}')[0]
+              : `${t.chart.title} · `}
+            <span style={{ color: 'var(--accent)' }}>{titleLabel}</span>
           </h2>
-          <div className="flex items-center gap-2 text-[14px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+          <div className="flex flex-wrap items-center gap-2 text-[14px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
             <span
               className="inline-block w-2.5 h-2.5 rounded-full"
               style={{ background: 'var(--accent)' }}
               aria-hidden="true"
             />
-            <span>
-              Rango individual ({indicator.rangeText} {indicator.unit})
-            </span>
+            <span>{tf(t.chart.individualRange, { range: indicator.rangeText, unit: indicator.unit })}</span>
+            {indicator.baseline !== undefined && (
+              <span className="font-mono text-[13px]">
+                · {tf(t.chart.baseline, { n: formatNumber(indicator.baseline, indicator.decimals) })}
+              </span>
+            )}
+            {indicator.delta !== undefined && (
+              <span className="font-mono text-[13px]">
+                · {tf(t.chart.delta, {
+                  n: `${indicator.delta > 0 ? '+' : ''}${formatNumber(indicator.delta, indicator.decimals)}`,
+                })}
+              </span>
+            )}
+            {indicator.sqi !== undefined && (
+              <span className="font-mono text-[13px]">
+                · {tf(t.chart.sqi, { n: Math.round(indicator.sqi * 100) })}
+              </span>
+            )}
+            {indicator.artifact && (
+              <span className="font-mono text-[13px]" style={{ color: 'var(--status-watch)' }}>
+                · {t.chart.artifact}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Selector de Periodo: Vivo | 24h | 7d (Página 9: Tabs con acento activo) */}
         <div
           role="tablist"
-          aria-label="Rango temporal de evolución"
+          aria-label={t.chart.rangeTablist}
           className="p-1 rounded-[11px] flex items-center gap-1 border"
           style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
         >
@@ -127,19 +148,18 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
                 color: timeRange === r ? 'var(--on-accent)' : 'var(--text)',
               }}
             >
-              {r === '7d' ? '7 días' : r}
+              {rangeLabel(r)}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Lienzo Interactivo SVG */}
       <div className="relative w-full h-[205px] select-none">
         <svg
           ref={svgRef}
           tabIndex={0}
           role="img"
-          aria-label="Gráfica de evolución temporal. Usa las flechas izquierda y derecha para explorar los valores."
+          aria-label={t.chart.aria}
           viewBox={`0 0 ${W} ${H}`}
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setScrubIndex(null)}
@@ -153,19 +173,11 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
             </linearGradient>
           </defs>
 
-          {/* Líneas guía horizontales */}
           {yTicks.map((tv, idx) => {
             const ty = toY(tv)
             return (
               <g key={idx}>
-                <line
-                  x1={padL}
-                  y1={ty}
-                  x2={W - padR}
-                  y2={ty}
-                  stroke="var(--border)"
-                  strokeWidth="1"
-                />
+                <line x1={padL} y1={ty} x2={W - padR} y2={ty} stroke="var(--border)" strokeWidth="1" />
                 <text
                   x={padL - 8}
                   y={ty + 4}
@@ -174,21 +186,13 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
                   fontFamily="IBM Plex Mono"
                   fontSize="12"
                 >
-                  {formatEs(tv, indicator.decimals)}
+                  {formatNumber(tv, indicator.decimals)}
                 </text>
               </g>
             )
           })}
 
-          {/* Franja = Rango Individual con glow-blue (4 colores: negro, blanco, rojo y azul) */}
-          <rect
-            x={padL}
-            y={refTopY}
-            width={plotW}
-            height={refH}
-            fill="var(--glow-blue)"
-            rx={4}
-          />
+          <rect x={padL} y={refTopY} width={plotW} height={refH} fill="var(--glow-blue)" rx={4} />
           <line
             x1={padL}
             y1={refTopY}
@@ -210,7 +214,6 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
             strokeWidth="1"
           />
 
-          {/* Área y Línea de Serie (Azul de acento) */}
           {areaD && <path d={areaD} fill="url(#vitalisAreaGrad)" />}
           {lineD && (
             <path
@@ -223,7 +226,6 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
             />
           )}
 
-          {/* Marcadores de Evento (Rojo danger - Página 6) */}
           {coords
             .filter((c) => c.isEvent)
             .map((c, i) => (
@@ -234,7 +236,6 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
               />
             ))}
 
-          {/* Cursor vertical y punto activo */}
           {activePt && (
             <>
               <line
@@ -257,17 +258,9 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
             </>
           )}
 
-          {/* Etiquetas de eje X */}
           {coords.length > 0 && (
             <>
-              <text
-                x={padL}
-                y={H - 5}
-                textAnchor="start"
-                fill="var(--text-muted)"
-                fontFamily="IBM Plex Mono"
-                fontSize="12"
-              >
+              <text x={padL} y={H - 5} textAnchor="start" fill="var(--text-muted)" fontFamily="IBM Plex Mono" fontSize="12">
                 {coords[0].label}
               </text>
               <text
@@ -294,7 +287,6 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
           )}
         </svg>
 
-        {/* Tooltip flotante de inspección */}
         {scrubIndex !== null && activePt && (
           <div
             className="pointer-events-none absolute top-2 right-2 px-3 py-1.5 rounded-[10px] border text-[14px] font-mono tabular-nums"
@@ -304,14 +296,14 @@ export const EvolutionChart: React.FC<EvolutionChartProps> = ({
               color: 'var(--text)',
             }}
           >
-            {activePt.label} · {formatEs(activePt.val, indicator.decimals)} {indicator.unit}
+            {activePt.label} · {formatNumber(activePt.val, indicator.decimals)} {indicator.unit}
           </div>
         )}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-[14px]" style={{ color: 'var(--text-muted)' }}>
-        <span>Dentro de tu rango individual el {pctInRange} % del periodo seleccionado.</span>
-        <span className="font-mono text-[14px]">Teclado: ← → para explorar</span>
+        <span>{tf(t.chart.inRange, { n: pctInRange })}</span>
+        <span className="font-mono text-[14px]">{t.chart.keyboard}</span>
       </div>
     </div>
   )

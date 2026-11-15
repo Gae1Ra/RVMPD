@@ -230,10 +230,21 @@ def local_report(stats):
     report = {"window_minutes": minutes, "engine": "local", "model": None, "data_points": rows,
               "disclaimer": DISCLAIMER}
     if rows < MIN_ROWS:
-        report.update(summary=f"Not enough data yet: only {rows} readings were stored in the last {minutes} "
-                              f"minutes, and at least {MIN_ROWS} are needed for an analysis.",
-                      findings=[], facts=[f"{rows} readings stored in the last {minutes} minutes",
-                                          f"At least {MIN_ROWS} readings are needed"])
+        need = MIN_ROWS - rows
+        # Simulator stores ~1 sample/s once the backend is running (see Engine._advance).
+        report.update(
+            summary=(
+                f"Waiting for readings: only {rows} of {MIN_ROWS} needed were stored in the last "
+                f"{minutes} minutes. Keep the backend (and simulator) running — about 1 reading "
+                f"per second — then retry in ~{need}s. This is not an empty health report."
+            ),
+            findings=[],
+            facts=[
+                f"{rows} readings stored in the last {minutes} minutes",
+                f"Need at least {MIN_ROWS} readings before analysis can run",
+                f"Wait ~{need}s for the live simulator to accumulate more samples",
+            ],
+        )
         return report
 
     candidates = [_radiation(stats), _hypoxia(stats), _fever(stats), _low_pressure(stats), _low_mood(stats)]

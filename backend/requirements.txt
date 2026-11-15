@@ -6,4 +6,6 @@ statsmodels>=0.14
 pydantic>=2.7
 httpx>=0.27
 pytest>=8.0
-anthropic>=2.8
+# [bedrock] pulls boto3/botocore for SigV4 fallback; Mantle bearer auth uses AWS_BEARER_TOKEN_BEDROCK.
+anthropic[bedrock]>=2.8
+python-dotenv>=1.0

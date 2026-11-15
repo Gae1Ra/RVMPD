@@ -1,5 +1,6 @@
 import React from 'react'
 import type { Indicator, Mission } from '../types'
+import { useT } from '../i18n'
 
 interface NotifyModalProps {
   isOpen: boolean
@@ -14,6 +15,7 @@ export const NotifyModal: React.FC<NotifyModalProps> = ({
   onClose,
   onConfirm,
 }) => {
+  const { t, tf } = useT()
   if (!isOpen) return null
 
   return (
@@ -24,17 +26,14 @@ export const NotifyModal: React.FC<NotifyModalProps> = ({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
       onClick={onClose}
     >
-      <div
-        className="vitalis-glass w-full max-w-md p-5 space-y-4"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="vitalis-glass w-full max-w-md p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 id="notify-modal-title" className="text-[17px] font-bold">
-            Aviso al Equipo Médico
+            {t.notify.title}
           </h3>
           <button
             onClick={onClose}
-            aria-label="Cerrar ventana"
+            aria-label={t.notify.close}
             className="w-9 h-9 rounded-lg border flex items-center justify-center cursor-pointer transition hover:opacity-80"
             style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
           >
@@ -42,13 +41,13 @@ export const NotifyModal: React.FC<NotifyModalProps> = ({
           </button>
         </div>
         <p className="text-[15px]" style={{ color: 'var(--text-muted)' }}>
-          Se enviará la instantánea actual de los 6 signos vitales y el registro de eventos al médico de vuelo mediante el enlace local a bordo.
+          {t.notify.body}
         </p>
         <div
           className="p-3 rounded-xl border font-mono text-[14px] tabular-nums"
           style={{ background: 'var(--surface-data)', borderColor: 'var(--border)' }}
         >
-          Perfil: A-01 · Día 42 · Preparación: <strong>{readiness}</strong>/100
+          {tf(t.notify.profile, { n: readiness })}
         </div>
         <div className="flex justify-end gap-2">
           <button
@@ -56,14 +55,14 @@ export const NotifyModal: React.FC<NotifyModalProps> = ({
             className="px-4 py-2 rounded-[12px] text-[14px] font-medium border cursor-pointer transition hover:bg-[var(--surface-hover)]"
             style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
           >
-            Cancelar
+            {t.notify.cancel}
           </button>
           <button
             onClick={onConfirm}
             className="px-4 py-2 rounded-[12px] text-[14px] font-semibold cursor-pointer transition hover:opacity-90"
             style={{ background: 'var(--danger)', color: 'var(--on-accent)' }}
           >
-            Confirmar envío
+            {t.notify.confirm}
           </button>
         </div>
       </div>
@@ -88,14 +87,14 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
   onToggleMission,
   onClose,
 }) => {
+  const { t, tf } = useT()
   if (!isOpen) return null
 
-  // 200 XP por nivel: Cadete -> Especialista -> Piloto -> Comandante
   const getRank = (xpVal: number) => {
-    if (xpVal >= 600) return 'Comandante'
-    if (xpVal >= 400) return 'Piloto'
-    if (xpVal >= 200) return 'Especialista'
-    return 'Cadete'
+    if (xpVal >= 600) return t.missions.ranks.comandante
+    if (xpVal >= 400) return t.missions.ranks.piloto
+    if (xpVal >= 200) return t.missions.ranks.especialista
+    return t.missions.ranks.cadete
   }
 
   const currentLevelXp = xp % 200
@@ -108,22 +107,19 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
       onClick={onClose}
     >
-      <div
-        className="vitalis-glass w-full max-w-lg p-5 space-y-4"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="vitalis-glass w-full max-w-lg p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <div>
             <h3 id="missions-modal-title" className="text-[17px] font-bold">
-              Rutinas diarias · A-01
+              {t.missions.modalTitle}
             </h3>
             <p className="text-[14px]" style={{ color: 'var(--text-muted)' }}>
-              Posponer una rutina nunca resta progreso.
+              {t.missions.postponeNote}
             </p>
           </div>
           <button
             onClick={onClose}
-            aria-label="Cerrar ventana"
+            aria-label={t.notify.close}
             className="w-9 h-9 rounded-lg border flex items-center justify-center cursor-pointer transition hover:opacity-80"
             style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
           >
@@ -140,7 +136,7 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
               color: 'var(--text)',
             }}
           >
-            <strong>Seguridad activa:</strong> El ejercicio de resistencia está pausado hasta que tus signos vuelvan a tu rango habitual.
+            <strong>{t.missions.safety}</strong>
           </div>
         )}
 
@@ -156,15 +152,11 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
                 style={{ background: 'var(--surface-data)', borderColor: 'var(--border)' }}
               >
                 <div>
-                  <div
-                    className={`text-[15px] font-medium ${
-                      m.done ? 'line-through opacity-70' : ''
-                    }`}
-                  >
+                  <div className={`text-[15px] font-medium ${m.done ? 'line-through opacity-70' : ''}`}>
                     {m.title}
                   </div>
                   <div className="font-mono text-[14px]" style={{ color: 'var(--text-muted)' }}>
-                    {locked ? 'Pausado por seguridad' : `+${m.xp} XP`}
+                    {locked ? t.missions.paused : `+${m.xp} XP`}
                   </div>
                 </div>
                 <button
@@ -177,7 +169,7 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
                     color: m.done ? 'var(--on-accent)' : 'var(--text)',
                   }}
                 >
-                  {m.done ? 'Completada' : 'Completar'}
+                  {m.done ? t.missions.done : t.missions.complete}
                 </button>
               </div>
             )
@@ -188,15 +180,13 @@ export const MissionsModal: React.FC<MissionsModalProps> = ({
           className="flex items-center justify-between pt-2 border-t text-[14px] font-mono"
           style={{ borderColor: 'var(--border)' }}
         >
-          <span>
-            Nivel: {getRank(xp)} · {currentLevelXp} / 200 XP
-          </span>
+          <span>{tf(t.missions.level, { rank: getRank(xp), xp: currentLevelXp })}</span>
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-[12px] font-sans font-semibold cursor-pointer transition hover:opacity-90"
             style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
           >
-            Listo
+            {t.missions.ready}
           </button>
         </div>
       </div>
@@ -209,10 +199,8 @@ interface IndicatorInfoModalProps {
   onClose: () => void
 }
 
-export const IndicatorInfoModal: React.FC<IndicatorInfoModalProps> = ({
-  indicator,
-  onClose,
-}) => {
+export const IndicatorInfoModal: React.FC<IndicatorInfoModalProps> = ({ indicator, onClose }) => {
+  const { t } = useT()
   if (!indicator) return null
 
   return (
@@ -223,17 +211,14 @@ export const IndicatorInfoModal: React.FC<IndicatorInfoModalProps> = ({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
       onClick={onClose}
     >
-      <div
-        className="vitalis-glass w-full max-w-md p-5 space-y-3"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="vitalis-glass w-full max-w-md p-5 space-y-3" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 id="info-modal-title" className="text-[17px] font-bold">
             {indicator.astroName} ({indicator.rangeText} {indicator.unit})
           </h3>
           <button
             onClick={onClose}
-            aria-label="Cerrar ventana"
+            aria-label={t.notify.close}
             className="w-9 h-9 rounded-lg border flex items-center justify-center cursor-pointer transition hover:opacity-80"
             style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
           >
@@ -242,10 +227,10 @@ export const IndicatorInfoModal: React.FC<IndicatorInfoModalProps> = ({
         </div>
         <div className="space-y-2.5 text-[15px]">
           <p>
-            <strong>¿Qué mide?</strong> {indicator.whatMeasures}
+            <strong>{t.info.what}</strong> {indicator.whatMeasures}
           </p>
           <p>
-            <strong>¿Cuándo avisar?</strong> {indicator.whenNotify}
+            <strong>{t.info.when}</strong> {indicator.whenNotify}
           </p>
         </div>
         <div className="pt-2 flex justify-end">
@@ -254,7 +239,7 @@ export const IndicatorInfoModal: React.FC<IndicatorInfoModalProps> = ({
             className="px-4 py-2 rounded-[12px] text-[14px] font-semibold cursor-pointer transition hover:opacity-90"
             style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
           >
-            Entendido
+            {t.info.understood}
           </button>
         </div>
       </div>

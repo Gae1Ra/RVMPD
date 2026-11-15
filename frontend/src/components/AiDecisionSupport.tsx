@@ -1,6 +1,7 @@
 import React from 'react'
 import type { AiQuery, Indicator, Mission, Role } from '../types'
 import { getIndicatorLevel } from '../constants'
+import { useT } from '../i18n'
 
 interface AiDecisionSupportProps {
   role: Role
@@ -21,46 +22,41 @@ export const AiDecisionSupport: React.FC<AiDecisionSupportProps> = ({
   onCompleteNextMission,
   onOpenMissionsModal,
 }) => {
+  const { t, tf } = useT()
   const maxLevel = Math.max(...indicators.map(getIndicatorLevel))
   const fc = indicators.find((i) => i.id === 'fc') || indicators[0]
   const spo2 = indicators.find((i) => i.id === 'spo2') || indicators[1]
   const hrv = indicators.find((i) => i.id === 'hrv') || indicators[5]
+  const vars = { fc: fc.current, spo2: spo2.current, hrv: hrv.current }
 
-  // Observación e Hipótesis para Médico
   let obs = ''
   let hyp = ''
 
   if (maxLevel >= 2) {
-    obs = `Elevación simultánea de FC (${fc.current} lpm) y FR con descenso de SpO₂ (${spo2.current} %) y HRV (${hrv.current} ms) fuera del rango individual de A-01.`
-    hyp = `Respuesta autonómica aguda o sobrecarga tras actividad; se recomienda reposo inmediato y reevaluación en 5 minutos.`
+    obs = tf(t.ai.alertObs, vars)
+    hyp = t.ai.alertHyp
   } else if (aiQuery === 'resumen24h') {
-    obs = `En las últimas 24 horas los 6 parámetros simulados se mantuvieron dentro de sus franjas individuales en más del 96 % de las muestras.`
-    hyp = `Estabilidad hemodinámica y buena recuperación nocturna en cabina; sin alertas pendientes.`
+    obs = t.ai.summary24Obs
+    hyp = t.ai.summary24Hyp
   } else if (aiQuery === 'tendencia') {
-    obs = `Variabilidad cardíaca en ${hrv.current} ms (rango 40–70 ms) y frecuencia cardíaca basal estable en ${fc.current} lpm.`
-    hyp = `Balance autonómico conservado sin signos tempranos de fatiga acumulada.`
+    obs = tf(t.ai.trendObs, vars)
+    hyp = t.ai.trendHyp
   } else if (aiQuery === 'protocolo') {
-    obs = `Umbrales individuales activos para los 6 sensores simulados con actualización cada 1 segundo.`
-    hyp = `En caso de superar advertencia, el protocolo local indica pausar esfuerzo físico y notificar al equipo médico.`
+    obs = t.ai.protocolObs
+    hyp = t.ai.protocolHyp
   } else {
-    obs = `Los 6 signos vitales permanecen dentro del rango individual de A-01 (FC ${fc.current} lpm, SpO₂ ${spo2.current} %, HRV ${hrv.current} ms).`
-    hyp = `Estado basal estable en cabina; herramienta de apoyo sobre datos simulados sin diagnóstico clínico.`
+    obs = tf(t.ai.defaultObs, vars)
+    hyp = t.ai.defaultHyp
   }
 
-  // Texto para Astronauta (Páginas 2 y 3: Serena, precisa, cercana)
-  const astroGuidance =
-    maxLevel >= 2
-      ? 'Tus pulsaciones y respiración están altas. Detén el ejercicio, descansa sentado y avisa al equipo médico.'
-      : 'Tus signos vitales están dentro de tu rango habitual. Puedes continuar con tus rutinas diarias con normalidad.'
-
-  // Siguiente misión pendiente respetando regla de seguridad
+  const astroGuidance = maxLevel >= 2 ? t.ai.astroAlert : t.ai.astroOk
   const nextMission = missions.find((m) => !m.done && !(maxLevel >= 2 && m.isExercise))
 
   return (
     <div className="lg:col-span-5 vitalis-surface p-4 flex flex-col justify-between gap-3">
       <div>
         <div className="flex items-center justify-between gap-2 mb-2.5">
-          <h2 className="text-[16px] font-semibold">IA Local · Apoyo a la decisión</h2>
+          <h2 className="text-[16px] font-semibold">{t.ai.title}</h2>
           <span
             className="font-label text-[12px] px-2.5 py-0.5 rounded-lg border"
             style={{
@@ -69,56 +65,53 @@ export const AiDecisionSupport: React.FC<AiDecisionSupportProps> = ({
               color: 'var(--text-muted)',
             }}
           >
-            A bordo
+            {t.ai.onboard}
           </span>
         </div>
 
         {role === 'medico' ? (
-          /* Contenido IA para Rol Médico */
           <div className="space-y-2.5 text-[15px]">
             <p className="font-secondary leading-relaxed">
-              <strong className="font-semibold text-[var(--text)]">Observación:</strong> {obs}
+              <strong className="font-semibold text-[var(--text)]">{t.ai.observation}</strong> {obs}
             </p>
             <p className="font-secondary leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-              <strong className="font-semibold text-[var(--text)]">Hipótesis:</strong> {hyp}
+              <strong className="font-semibold text-[var(--text)]">{t.ai.hypothesis}</strong> {hyp}
             </p>
           </div>
         ) : (
-          /* Contenido IA para Rol Astronauta */
           <div className="space-y-3 text-[15px]">
             <p className="font-secondary leading-relaxed">{astroGuidance}</p>
 
-            {/* Píldora de Siguiente Acción / Misión Diaria */}
             <div
               className="p-3 rounded-xl border flex items-center justify-between gap-2"
               style={{ background: 'var(--surface-data)', borderColor: 'var(--border)' }}
             >
               <div>
                 <div className="font-label text-[12px]" style={{ color: 'var(--text-muted)' }}>
-                  Siguiente acción
+                  {t.ai.nextAction}
                 </div>
                 <div className="text-[15px] font-semibold">
                   {nextMission
                     ? `${nextMission.title} · +${nextMission.xp} XP`
-                    : 'Rutinas disponibles completadas hoy'}
+                    : t.ai.missionsDone}
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
                 {nextMission && (
                   <button
                     onClick={onCompleteNextMission}
-                    className="px-3.5 py-1.5 rounded-[12px] text-[14px] font-semibold cursor-pointer transition hover:opacity-90"
+                    className="touch-target px-3.5 py-2 rounded-[12px] text-[14px] font-semibold cursor-pointer transition hover:opacity-90"
                     style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
                   >
-                    Empezar · +{nextMission.xp} XP
+                    {tf(t.ai.startXp, { n: nextMission.xp })}
                   </button>
                 )}
                 <button
                   onClick={onOpenMissionsModal}
-                  className="px-2.5 py-1.5 rounded-[12px] text-[14px] font-medium border cursor-pointer transition hover:bg-[var(--surface-hover)]"
+                  className="touch-target px-2.5 py-2 rounded-[12px] text-[14px] font-medium border cursor-pointer transition hover:bg-[var(--surface-hover)]"
                   style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
                 >
-                  Ver 5
+                  {t.ai.view5}
                 </button>
               </div>
             </div>
@@ -126,41 +119,40 @@ export const AiDecisionSupport: React.FC<AiDecisionSupportProps> = ({
         )}
       </div>
 
-      {/* Botones de Consulta Rápida (Rol Médico) */}
       {role === 'medico' && (
         <div className="flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
           <button
             onClick={() => onAiQueryChange('resumen24h')}
-            className="px-3 py-1.5 rounded-[12px] text-[14px] font-medium border transition cursor-pointer"
+            className="touch-target px-3 py-2 rounded-[12px] text-[14px] font-medium border transition cursor-pointer"
             style={{
               background: aiQuery === 'resumen24h' ? 'var(--accent)' : 'var(--pill-bg)',
               borderColor: 'var(--border)',
               color: aiQuery === 'resumen24h' ? 'var(--on-accent)' : 'var(--text)',
             }}
           >
-            Resumen 24h
+            {t.ai.summary24h}
           </button>
           <button
             onClick={() => onAiQueryChange('tendencia')}
-            className="px-3 py-1.5 rounded-[12px] text-[14px] font-medium border transition cursor-pointer"
+            className="touch-target px-3 py-2 rounded-[12px] text-[14px] font-medium border transition cursor-pointer"
             style={{
               background: aiQuery === 'tendencia' ? 'var(--accent)' : 'var(--pill-bg)',
               borderColor: 'var(--border)',
               color: aiQuery === 'tendencia' ? 'var(--on-accent)' : 'var(--text)',
             }}
           >
-            Evaluar tendencia
+            {t.ai.trend}
           </button>
           <button
             onClick={() => onAiQueryChange('protocolo')}
-            className="px-3 py-1.5 rounded-[12px] text-[14px] font-medium border transition cursor-pointer"
+            className="touch-target px-3 py-2 rounded-[12px] text-[14px] font-medium border transition cursor-pointer"
             style={{
               background: aiQuery === 'protocolo' ? 'var(--accent)' : 'var(--pill-bg)',
               borderColor: 'var(--border)',
               color: aiQuery === 'protocolo' ? 'var(--on-accent)' : 'var(--text)',
             }}
           >
-            Protocolo activo
+            {t.ai.protocol}
           </button>
         </div>
       )}
