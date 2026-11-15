@@ -37,6 +37,7 @@ export const es = {
   lang: {
     es: 'ES',
     en: 'EN',
+    fr: 'FR',
     selector: 'Idioma',
   },
   status: {
@@ -362,4 +363,4 @@ type DeepStringify<T> = T extends string
       : T
 
 export type Dictionary = DeepStringify<typeof es>
-export type Locale = 'es' | 'en'
+export type { Locale } from './languages'

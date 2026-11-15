@@ -1,13 +1,8 @@
-import type { Locale } from './es'
+import { intlTag, type Locale } from './languages'
 
-const localeTag: Record<Locale, string> = {
-  es: 'es-ES',
-  en: 'en-US',
-}
-
-/** Locale-aware number format: Spanish uses comma decimals (36,8), English uses period (36.8). */
+/** Locale-aware number format via Intl (es/fr use decimal comma; en uses period). */
 export function formatNumber(val: number, decimals = 0, locale: Locale = 'es'): string {
-  return new Intl.NumberFormat(localeTag[locale], {
+  return new Intl.NumberFormat(intlTag(locale), {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(val)

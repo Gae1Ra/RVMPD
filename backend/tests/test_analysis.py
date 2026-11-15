@@ -322,3 +322,18 @@ def test_analysis_lang_passed_to_prompt(monkeypatch, client, db):
     # Route accepts lang without error
     assert client.post("/api/analysis", json={"minutes": 5, "lang": "es"}).status_code == 200
     assert client.post("/api/analysis", json={"minutes": 5, "lang": "en"}).status_code == 200
+
+
+def test_analysis_lang_fr_passed_to_prompt(monkeypatch, client, db):
+    capture = {}
+    monkeypatch.setattr(llm, "make_client", lambda: (_ok_client(capture=capture), "test-model"))
+    fill(db)
+    stats = analysis.window_stats(db, 10)
+    local = analysis.local_report(stats)
+    llm.refine(stats, local, db=db, lang="fr")
+    assert "Respond in French" in capture["system"]
+    assert "Do not translate numeric values" in capture["system"]
+    assert client.post("/api/analysis", json={"minutes": 5, "lang": "fr"}).status_code == 200
+    # Local engine stays English regardless of lang
+    if local["findings"]:
+        assert local["findings"][0]["condition"].startswith("Possible")

@@ -1,8 +1,9 @@
 /** Spoken diagnostics: ElevenLabs via /api/tts, browser speechSynthesis fallback. */
 
 import { API_URL } from '../api'
+import { speechTag, type Locale } from '../i18n/languages'
 
-export type VoiceLang = 'es' | 'en'
+export type VoiceLang = Locale
 export type SpeakPriority = 'normal' | 'high'
 
 export type VoiceProviderLabel = 'elevenlabs' | 'browser' | 'muted' | 'unknown'
@@ -257,6 +258,17 @@ async function playElevenLabs(text: string, lang: VoiceLang): Promise<boolean> {
   }
 }
 
+function pickBrowserVoice(langTag: string): SpeechSynthesisVoice | undefined {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return undefined
+  const voices = window.speechSynthesis.getVoices()
+  if (!voices.length) return undefined
+  const normalized = langTag.toLowerCase().replace('_', '-')
+  const exact = voices.find((v) => v.lang.toLowerCase().replace('_', '-') === normalized)
+  if (exact) return exact
+  const prefix = normalized.slice(0, 2)
+  return voices.find((v) => v.lang.toLowerCase().startsWith(prefix))
+}
+
 function playBrowser(text: string, lang: VoiceLang): Promise<void> {
   return new Promise((resolve) => {
     if (typeof window === 'undefined' || !window.speechSynthesis) {
@@ -266,7 +278,10 @@ function playBrowser(text: string, lang: VoiceLang): Promise<void> {
     provider = 'browser'
     notify()
     const u = new SpeechSynthesisUtterance(text.slice(0, 500))
-    u.lang = lang === 'es' ? 'es-ES' : 'en-US'
+    const tag = speechTag(lang)
+    u.lang = tag
+    const voice = pickBrowserVoice(tag)
+    if (voice) u.voice = voice
     u.volume = volume
     u.onend = () => resolve()
     u.onerror = () => resolve()

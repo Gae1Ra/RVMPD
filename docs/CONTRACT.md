@@ -87,7 +87,7 @@ Check-ins (`/api/checkin`, `/api/checkins`) keep the same shape but are now stor
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| POST | `/api/analysis` | `{"minutes": 60, "lang": "en"}` (both optional; `lang` is `"en"` or `"es"`, default `"en"`) | a new report, see below |
+| POST | `/api/analysis` | `{"minutes": 60, "lang": "en"}` (both optional; `lang` is `"en"`, `"es"`, or `"fr"`, default `"en"`) | a new report, see below |
 | GET | `/api/analysis/latest` | | the newest report, or 404 if none exists |
 | GET | `/api/analysis/engine` | | provider status (no network): see below |
 
@@ -120,7 +120,7 @@ Rules:
 - `findings` may be empty; then `summary` says that nothing unusual was found. At most 5 findings, most likely first.
 - `facts` holds 2 to 6 short observations from the stored data (trends, averages, links between measurements).
 - If the language model is not configured or fails, the backend returns the local report. It never returns an error because of the model.
-- Optional `lang` on POST `/api/analysis`: `"en"` (default) or `"es"`. When the model runs with `"es"`, it is asked for a Spanish narrative with the same JSON schema (numbers stay untranslated). The local rule engine always stays English.
+- Optional `lang` on POST `/api/analysis`: `"en"` (default), `"es"`, or `"fr"`. When the model runs with `"es"` or `"fr"`, it is asked for a Spanish or French narrative with the same JSON schema (numbers stay untranslated). The local rule engine always stays English (as-is).
 - Optional refinement uses Anthropic API or AWS Bedrock Mantle (`VITALIS_USE_BEDROCK=1` + `AWS_BEARER_TOKEN_BEDROCK`). The model receives aggregates only, never raw readings. Spend is capped (`VITALIS_SPEND_CAP_USD`, default 0.50) and rate-limited (1 call / 30 s, 100 / process).
 
 `GET /api/analysis/engine` (no network):
@@ -145,7 +145,7 @@ Optional ElevenLabs text-to-speech for spoken diagnostics. When the key/voices a
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| POST | `/api/tts` | `{"text": str, "lang": "es"\|"en"}` | MP3 audio (`audio/mpeg`), or 503 fallback JSON |
+| POST | `/api/tts` | `{"text": str, "lang": "es"\|"en"\|"fr"}` | MP3 audio (`audio/mpeg`), or 503 fallback JSON |
 | GET | `/api/tts/status` | | provider readiness and character spend (no network) |
 
 `POST /api/tts` success: raw MP3 bytes. Soft failures return **503** with:

@@ -5,9 +5,15 @@ import hashlib
 import logging
 import os
 from pathlib import Path
-from typing import Literal
 
 import httpx
+
+from .languages import (
+    STATUS_REQUIRED_VOICES,
+    Lang,
+    normalize_lang,
+    voice_env_name,
+)
 
 log = logging.getLogger("vitalis.tts")
 
@@ -27,8 +33,6 @@ MAX_CHARS_PER_REQUEST = 500
 TIMEOUT_S = 20.0
 ELEVENLABS_URL = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
 CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "tts_cache"
-
-Lang = Literal["es", "en"]
 
 
 class TtsFallback(Exception):
@@ -63,14 +67,15 @@ def api_key() -> str | None:
 
 
 def voice_id_for(lang: Lang) -> str | None:
-    env_name = "ELEVENLABS_VOICE_ID_ES" if lang == "es" else "ELEVENLABS_VOICE_ID_EN"
-    voice = (os.environ.get(env_name) or "").strip()
+    voice = (os.environ.get(voice_env_name(lang)) or "").strip()
     return voice or None
 
 
 def is_configured() -> bool:
-    """True when key + both voice placeholders are non-empty (does not prove they work)."""
-    return bool(api_key() and voice_id_for("es") and voice_id_for("en"))
+    """True when key + status-required voices are set (FR optional; does not prove they work)."""
+    if not api_key():
+        return False
+    return all(voice_id_for(lang) for lang in STATUS_REQUIRED_VOICES)  # type: ignore[arg-type]
 
 
 def provider_name() -> str:
@@ -86,10 +91,6 @@ def status(db=None) -> dict:
         "chars_used": used,
         "chars_cap": char_cap(),
     }
-
-
-def _normalize_lang(lang: str) -> Lang:
-    return "es" if lang == "es" else "en"
 
 
 def _cache_key(text: str, lang: Lang, voice: str, model: str) -> str:
@@ -115,7 +116,7 @@ def _classify_http_error(status_code: int, body: str) -> str:
 
 def synthesize(text: str, lang: str = "en", db=None, http_client=None) -> bytes:
     """Return MP3 bytes. Raises TtsFallback with a clear reason on any soft failure."""
-    lang = _normalize_lang(lang)
+    lang = normalize_lang(lang)
     text = (text or "").strip()
     if not text:
         raise TtsFallback("empty_text")
@@ -125,8 +126,11 @@ def synthesize(text: str, lang: str = "en", db=None, http_client=None) -> bytes:
     key = api_key()
     voice = voice_id_for(lang)
     model = model_id()
-    if not key or not voice:
-        raise TtsFallback("missing_key" if not key else "missing_voice")
+    if not key:
+        raise TtsFallback("missing_key")
+    if not voice:
+        # Missing FR (or any) voice → clear browser fallback, not an opaque error.
+        raise TtsFallback("missing_voice")
 
     cache_key = _cache_key(text, lang, voice, model)
     path = _cache_path(cache_key)
@@ -142,8 +146,8 @@ def synthesize(text: str, lang: str = "en", db=None, http_client=None) -> bytes:
         raise TtsFallback("char_cap")
 
     url = ELEVENLABS_URL.format(voice_id=voice)
-    # Official Create Speech body: text (required), model_id (optional).
-    # language_code is documented for models other than multilingual_v2 (flash_v2_5 supports it).
+    # Official Create Speech: text + model_id; language_code ISO 639-1 for flash_v2_5
+    # (https://elevenlabs.io/docs/api-reference/text-to-speech/convert). French = "fr".
     payload = {"text": text, "model_id": model, "language_code": lang}
     headers = {
         "xi-api-key": key,
@@ -178,5 +182,5 @@ def synthesize(text: str, lang: str = "en", db=None, http_client=None) -> bytes:
     path.write_bytes(audio)
     if db is not None:
         db.add_tts_chars(len(text))
-    log.info("tts provider=elevenlabs chars=%s cache=miss", len(text))
+    log.info("tts provider=elevenlabs chars=%s lang=%s cache=miss", len(text), lang)
     return audio

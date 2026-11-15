@@ -258,12 +258,16 @@ def _note_local(local: dict, note: str) -> dict:
 def _spend_cap_note(lang: str) -> str:
     if lang == "es":
         return "Modelo omitido: tope de gasto alcanzado"
+    if lang == "fr":
+        return "Modèle omis : plafond de dépense atteint"
     return "Language model skipped: spend cap reached"
 
 
 def _rate_limit_note(lang: str) -> str:
     if lang == "es":
         return "Modelo omitido: límite de frecuencia"
+    if lang == "fr":
+        return "Modèle omis : limite de fréquence"
     return "Language model skipped: rate limit"
 
 
@@ -307,15 +311,15 @@ def _few_shot_block() -> str:
 
 
 def _system_prompt(lang: str) -> str:
+    from .languages import llm_instruction, normalize_lang
+
     hrp = _load_hrp_notes()
     parts = [SYSTEM, _few_shot_block()]
     if hrp:
         parts.append("\n\n--- Mission brief (HRP-style summary) ---\n" + hrp)
-    if lang == "es":
-        parts.append(
-            "\n\nRespond in Spanish. Keep the same JSON schema field names. "
-            "Do not translate numeric values, units, or vital abbreviations."
-        )
+    instruction = llm_instruction(normalize_lang(lang))
+    if instruction:
+        parts.append("\n\n" + instruction)
     return "".join(parts)
 
 
@@ -340,7 +344,9 @@ def _allow_call(db, lang: str) -> tuple[bool, dict | None]:
 def refine(stats, local, db=None, lang: str = "en"):
     """Return the model's report, or `local` unchanged if the model is missing, slow, failing or invalid."""
     global _session_calls, _last_call_monotonic
-    lang = "es" if lang == "es" else "en"
+    from .languages import normalize_lang
+
+    lang = normalize_lang(lang)
     configured_client = make_client()
     if configured_client is None:
         return local

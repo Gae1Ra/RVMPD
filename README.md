@@ -50,25 +50,26 @@ npm run dev
 
 Open http://localhost:5173. Vite proxies `/api` and `/ws` to `http://localhost:8000`. Optional: set `VITE_API_URL` (e.g. `http://localhost:8000`) to talk to the backend without the proxy.
 
-Use the scenario picker in the header (Nominal, Solar particle event, Hypoxia, Loose electrode, Fatigue). Switch language with **ES | EN** in the header or on the wrist view (choice is stored in `localStorage`, default Spanish).
+Use the scenario picker in the header (Nominal, Solar particle event, Hypoxia, Loose electrode, Fatigue). Switch language with **ES | EN | FR** in the header or on the wrist view (choice is stored in `localStorage`, default Spanish). Numbers use `Intl` (`es-ES` / `en-US` / `fr-FR`).
 
 ### Spoken alerts (ElevenLabs + browser fallback)
 
 Amber/red alerts and analysis summaries can be spoken automatically. Tap the discreet **enable voice** banner once (browsers block autoplay until a gesture). Mute with **M** or the header/wrist toggle; volume is stored in `localStorage`.
 
-Optional ElevenLabs (otherwise the UI uses `speechSynthesis`):
+Optional ElevenLabs (otherwise the UI uses `speechSynthesis` with a matching `es-ES` / `en-US` / `fr-FR` voice when available):
 
 | Variable | Effect |
 |---|---|
 | `ELEVENLABS_API_KEY` | API key (never commit) |
-| `ELEVENLABS_VOICE_ID_ES` / `ELEVENLABS_VOICE_ID_EN` | Voice ids from your ElevenLabs account |
-| `ELEVENLABS_MODEL` | Default `eleven_flash_v2_5` |
+| `ELEVENLABS_VOICE_ID_ES` / `ELEVENLABS_VOICE_ID_EN` / `ELEVENLABS_VOICE_ID_FR` | Voice ids from your ElevenLabs account (leave empty → browser fallback for that lang) |
+| `ELEVENLABS_MODEL` | Default `eleven_flash_v2_5` (sends ISO `language_code`) |
 | `VITALIS_TTS_CHAR_CAP` | Character spend cap (default `3000`; cache hits free) |
 
 ```
 cd backend
 python scripts/tts_smoke_test.py          # one real call (needs .env)
-python scripts/pregenerate_tts.py         # fill disk cache for demo phrases
+python scripts/pregenerate_tts.py         # fill disk cache for demo phrases (ES+EN+FR)
+python scripts/pregenerate_tts.py --lang fr
 ```
 
 For demos in Chrome without the tap banner:  
@@ -76,12 +77,16 @@ For demos in Chrome without the tap banner:
 
 ## Adding a language
 
-1. Copy `frontend/src/i18n/es.ts` to `frontend/src/i18n/<code>.ts` and translate every string (same keys).
-2. Type the new file as `Dictionary` (imported from `es.ts`) so `npm run build` fails if a key is missing.
-3. Register it in `frontend/src/i18n/context.tsx` (`dictionaries` map and `Locale` / `LangSwitcher`).
-4. Extend `Locale` in `frontend/src/i18n/es.ts` and the number-format map in `frontend/src/i18n/format.ts`.
+Keep one registry on each side — do not scatter locale codes:
 
-UI copy is fully localizable. Backend alert guides, analysis reports, and scenario names stay in English until the CONTRACT adds a locale field (see `DECISIONES.md` §8).
+1. **Frontend registry:** append to `frontend/src/i18n/languages.ts` (`code`, `intl`, `speech`, `voiceEnv`, labels).
+2. **Dictionary:** copy `frontend/src/i18n/es.ts` → `frontend/src/i18n/<code>.ts`, type as `Dictionary` so `npm run build` fails on missing keys; export from `index.ts` and register in `context.tsx` `dictionaries`.
+3. **Backend registry:** append to `backend/app/languages.py` (voice env name + optional LLM instruction). `POST /api/tts` and `POST /api/analysis` `lang` literals follow this set.
+4. **Env:** add `ELEVENLABS_VOICE_ID_<CODE>=` placeholder to `backend/.env.example` (never invent a real voice id).
+5. **Alerts / TTS cache:** extend `frontend/src/i18n/alertPhrases.ts` and `backend/scripts/pregenerate_tts.py` for fixed English → locale phrases; document leftovers that stay English.
+6. **CONTRACT / README:** mention the new `lang` value.
+
+UI chrome is fully localizable. Fixed alert titles/steps and known analysis condition titles are mapped on the client for ES/FR; dynamic rule-engine evidence/facts/summaries and scenario names stay English (local engine as-is). When a model is configured, `lang=es|fr` asks for a narrative in that language with the same JSON schema (numbers untranslated).
 
 ## How it works
 
