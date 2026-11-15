@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.VitalisCompanion" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/vitalis_teal</item>
+        <item name="colorPrimaryVariant">@color/vitalis_teal_dim</item>
+        <item name="colorSecondary">@color/vitalis_teal</item>
+        <item name="android:statusBarColor">@color/vitalis_navy_deep</item>
+        <item name="android:navigationBarColor">@color/vitalis_navy_deep</item>
+        <item name="android:windowBackground">@color/vitalis_navy</item>
+        <item name="android:textColorPrimary">@color/vitalis_text</item>
+        <item name="android:textColorSecondary">@color/vitalis_muted</item>
+    </style>
+</resources>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="vitalis_navy">#0B1C2C</color>
+    <color name="vitalis_navy_deep">#07131E</color>
+    <color name="vitalis_teal">#2BBBAD</color>
+    <color name="vitalis_teal_dim">#1A7A72</color>
+    <color name="vitalis_amber">#E0A100</color>
+    <color name="vitalis_red">#E04B4B</color>
+    <color name="vitalis_text">#E8F1F5</color>
+    <color name="vitalis_muted">#8AA0B2</color>
+    <color name="vitalis_panel">#122636</color>
+    <color name="ic_launcher_background">#0B1C2C</color>
+</resources>

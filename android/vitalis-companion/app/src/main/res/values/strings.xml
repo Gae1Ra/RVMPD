@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VITALIS Companion</string>
+    <string name="disclaimer">Decision support, not a medical diagnosis.</string>
+    <string name="backend_url_hint">http://192.168.1.42:8000</string>
+    <string name="backend_url_label">Backend base URL</string>
+    <string name="start_sync">Start sync</string>
+    <string name="stop_sync">Stop</string>
+    <string name="grant_permissions">Grant Health Connect</string>
+    <string name="install_health_connect">Install Health Connect</string>
+    <string name="last_hr">Last HR</string>
+    <string name="last_sync">Last sync</string>
+    <string name="connect_status">Connect status</string>
+    <string name="spo2_label">SpO₂</string>
+    <string name="temp_label">Skin temp</string>
+    <string name="hrv_label">HRV RMSSD</string>
+    <string name="sync_notification_title">VITALIS watch sync</string>
+    <string name="sync_notification_text">Posting Galaxy Watch vitals to VITALIS</string>
+    <string name="channel_sync">Watch sync</string>
+</resources>
