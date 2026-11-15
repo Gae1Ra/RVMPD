@@ -214,6 +214,9 @@ def run_analysis(body: AnalysisIn | None = None):
     body = body or AnalysisIn()
     stats = analysis.window_stats(app.state.db, body.minutes)
     local = analysis.local_report(stats)
+    # Do not spend Bedrock tokens on a thin window — return the wait message as-is.
+    if local.get("data_points", 0) < analysis.MIN_ROWS:
+        return app.state.db.save_report(local)
     return app.state.db.save_report(llm.refine(stats, local, db=app.state.db, lang=body.lang))
 
 

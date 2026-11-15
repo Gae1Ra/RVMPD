@@ -82,7 +82,9 @@ def test_untrusted_ecg_is_a_sensor_problem_not_a_body_condition(db):
 def test_empty_database_says_too_little_data(db):
     report = report_for(db)
     assert report["findings"] == []
-    assert "Not enough data" in report["summary"]
+    assert "Waiting for readings" in report["summary"]
+    assert str(analysis.MIN_ROWS) in report["summary"]
+    assert report["data_points"] == 0
 
 
 @pytest.fixture
