@@ -106,7 +106,7 @@ class ScenarioChange(BaseModel):
 
 class AnalysisIn(BaseModel):
     minutes: int = Field(60, ge=1, le=1440)
-    lang: Literal["en", "es"] = "en"
+    lang: Literal["en", "es", "fr"] = "en"
 
 
 class CheckInIn(BaseModel):
@@ -133,7 +133,7 @@ class MedicalAiIn(BaseModel):
 
 class TtsIn(BaseModel):
     text: str = Field(..., min_length=1)
-    lang: Literal["en", "es"] = "en"
+    lang: Literal["en", "es", "fr"] = "en"
 
 
 async def run_simulation(app):

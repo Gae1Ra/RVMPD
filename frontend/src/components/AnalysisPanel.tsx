@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
 import type { AnalysisReport } from '../types'
 import { useT } from '../i18n'
+import { localizeAnalysisReport } from '../i18n/localize'
 
 interface AnalysisPanelProps {
   onToast: (msg: string) => void
@@ -44,7 +45,7 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ onToast, onAnalyze
       setReport(next)
       setError(false)
       onToast(t.analysis.done)
-      onAnalyzed?.(next)
+      onAnalyzed?.(localizeAnalysisReport(next, locale))
     } catch {
       setError(true)
       onToast(t.analysis.fail)
@@ -52,6 +53,11 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ onToast, onAnalyze
       setBusy(false)
     }
   }
+
+  const display = useMemo(
+    () => (report ? localizeAnalysisReport(report, locale) : null),
+    [report, locale],
+  )
 
   return (
     <section className="vitalis-surface p-4 flex flex-col gap-3" aria-label={t.analysis.title} aria-busy={busy}>
@@ -89,10 +95,10 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ onToast, onAnalyze
         </p>
       )}
 
-      {report ? (
+      {display ? (
         <div className="space-y-2 text-[14px]">
-          <p className="leading-relaxed">{report.summary}</p>
-          {report.findings.map((f) => (
+          <p className="leading-relaxed">{display.summary}</p>
+          {display.findings.map((f) => (
             <div
               key={f.condition}
               className="p-3 rounded-xl border space-y-1"
@@ -114,16 +120,16 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ onToast, onAnalyze
               </p>
             </div>
           ))}
-          {report.facts.length > 0 && (
+          {display.facts.length > 0 && (
             <ul className="list-disc pl-4 space-y-0.5" style={{ color: 'var(--text-muted)' }}>
-              {report.facts.map((f) => (
+              {display.facts.map((f) => (
                 <li key={f}>{f}</li>
               ))}
             </ul>
           )}
           <p className="text-[12px] font-mono" style={{ color: 'var(--text-muted)' }}>
-            {report.disclaimer} · {report.engine}
-            {report.model ? ` (${report.model})` : ''} · {report.data_points}
+            {display.disclaimer} · {display.engine}
+            {display.model ? ` (${display.model})` : ''} · {display.data_points}
           </p>
         </div>
       ) : (

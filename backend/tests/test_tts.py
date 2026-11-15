@@ -182,3 +182,42 @@ def test_api_tts_rejects_over_500_via_synthesize(client, monkeypatch, tmp_path):
     r = client.post("/api/tts", json={"text": "z" * 501, "lang": "en"})
     assert r.status_code == 503
     assert r.json() == {"fallback": "browser", "reason": "text_too_long"}
+
+
+def test_cache_key_includes_lang(tts_env, monkeypatch):
+    monkeypatch.setenv("ELEVENLABS_VOICE_ID_FR", "voice-fr-placeholder")
+    client = MagicMock()
+    client.post.return_value = _fake_response(content=b"ID3-en")
+    tts.synthesize("Bonjour", "en", db=tts_env["db"], http_client=client)
+    assert client.post.call_count == 1
+
+    # Same text, different lang → separate cache entry → second API call
+    client.post.return_value = _fake_response(content=b"ID3-fr")
+    audio_fr = tts.synthesize("Bonjour", "fr", db=tts_env["db"], http_client=client)
+    assert client.post.call_count == 2
+    assert audio_fr == b"ID3-fr"
+    _args, kwargs = client.post.call_args
+    assert kwargs["json"]["language_code"] == "fr"
+    assert kwargs["json"]["model_id"] == "eleven_flash_v2_5"
+    assert kwargs["json"]["text"] == "Bonjour"
+
+    # Replay FR from cache (no third API call)
+    tts.synthesize("Bonjour", "fr", db=tts_env["db"], http_client=client)
+    assert client.post.call_count == 2
+
+
+def test_missing_fr_voice_browser_fallback(tts_env, monkeypatch):
+    monkeypatch.delenv("ELEVENLABS_VOICE_ID_FR", raising=False)
+    with pytest.raises(tts.TtsFallback) as exc:
+        tts.synthesize("Bonjour l'equipage", "fr", db=tts_env["db"])
+    assert exc.value.reason == "missing_voice"
+
+
+def test_api_tts_missing_fr_voice_returns_browser_fallback(client, monkeypatch):
+    monkeypatch.setenv("ELEVENLABS_API_KEY", "test-key-not-real")
+    monkeypatch.setenv("ELEVENLABS_VOICE_ID_ES", "voice-es-placeholder")
+    monkeypatch.setenv("ELEVENLABS_VOICE_ID_EN", "voice-en-placeholder")
+    monkeypatch.delenv("ELEVENLABS_VOICE_ID_FR", raising=False)
+    r = client.post("/api/tts", json={"text": "Bonjour", "lang": "fr"})
+    assert r.status_code == 503
+    assert r.json() == {"fallback": "browser", "reason": "missing_voice"}

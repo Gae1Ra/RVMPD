@@ -48,7 +48,7 @@ export const api = {
     request<HistoryResponse>(`/api/history?metric=${encodeURIComponent(metric)}&minutes=${minutes}`),
   alertLog: (limit: number) => request<AlertLogEntry[]>(`/api/alerts/log?limit=${limit}`),
   stats: () => request<Stats>('/api/stats'),
-  analyze: (minutes: number, lang: 'en' | 'es' = 'en') =>
+  analyze: (minutes: number, lang: 'en' | 'es' | 'fr' = 'en') =>
     request<AnalysisReport>('/api/analysis', { minutes, lang }),
   ttsStatus: () =>
     request<{ provider: string; configured: boolean; chars_used: number; chars_cap: number }>(

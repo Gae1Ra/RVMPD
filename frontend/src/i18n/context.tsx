@@ -8,11 +8,18 @@ import {
   type ReactNode,
 } from 'react'
 import { en } from './en'
-import { es, type Dictionary, type Locale } from './es'
+import { es, type Dictionary } from './es'
+import { fr } from './fr'
 import { fill, formatNumber } from './format'
+import {
+  DEFAULT_LOCALE,
+  isLocale,
+  LANGUAGES,
+  type Locale,
+} from './languages'
 
 const STORAGE_KEY = 'vitalis-locale'
-const dictionaries: Record<Locale, Dictionary> = { es, en }
+const dictionaries: Record<Locale, Dictionary> = { es, en, fr }
 
 interface I18nValue {
   locale: Locale
@@ -27,16 +34,16 @@ const I18nContext = createContext<I18nValue | null>(null)
 function readStoredLocale(): Locale {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored === 'en' || stored === 'es') return stored
+    if (isLocale(stored)) return stored
   } catch {
     /* ignore */
   }
-  return 'es'
+  return DEFAULT_LOCALE
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() =>
-    typeof window === 'undefined' ? 'es' : readStoredLocale(),
+    typeof window === 'undefined' ? DEFAULT_LOCALE : readStoredLocale(),
   )
 
   const setLocale = useCallback((next: Locale) => {
@@ -81,28 +88,25 @@ export function LangSwitcher({ className = '' }: { className?: string }) {
       className={`p-1 rounded-[12px] flex items-center gap-0.5 border ${className}`}
       style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
     >
-      <button
-        type="button"
-        onClick={() => setLocale('es')}
-        className="touch-target px-3 py-2 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
-        style={{
-          background: locale === 'es' ? 'var(--accent)' : 'transparent',
-          color: locale === 'es' ? 'var(--on-accent)' : 'var(--text)',
-        }}
-      >
-        {t.lang.es}
-      </button>
-      <button
-        type="button"
-        onClick={() => setLocale('en')}
-        className="touch-target px-3 py-2 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
-        style={{
-          background: locale === 'en' ? 'var(--accent)' : 'transparent',
-          color: locale === 'en' ? 'var(--on-accent)' : 'var(--text)',
-        }}
-      >
-        {t.lang.en}
-      </button>
+      {LANGUAGES.map((lang) => {
+        const active = locale === lang.code
+        const label =
+          lang.code === 'es' ? t.lang.es : lang.code === 'en' ? t.lang.en : t.lang.fr
+        return (
+          <button
+            key={lang.code}
+            type="button"
+            onClick={() => setLocale(lang.code)}
+            className="touch-target px-3 py-2 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
+            style={{
+              background: active ? 'var(--accent)' : 'transparent',
+              color: active ? 'var(--on-accent)' : 'var(--text)',
+            }}
+          >
+            {label}
+          </button>
+        )
+      })}
     </div>
   )
 }
