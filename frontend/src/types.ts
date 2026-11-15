@@ -113,6 +113,14 @@ export interface Alert {
   guidance: string[]
 }
 
+/** Additive Galaxy Watch metadata on WS frames (scenario galaxy_watch). */
+export interface WatchMeta {
+  connected: boolean
+  last_sync: string
+  device?: string
+  available: Partial<Record<MetricKey, boolean>>
+}
+
 export interface Frame {
   type: 'frame'
   t: number
@@ -122,6 +130,9 @@ export interface Frame {
   radiation: Radiation
   global: Global
   alerts: Alert[]
+  /** Present when source is the watch bridge / galaxy_watch scenario. */
+  source?: 'simulator' | 'watch'
+  watch?: WatchMeta
 }
 
 export interface Scenario {

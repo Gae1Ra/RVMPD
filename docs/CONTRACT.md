@@ -69,7 +69,18 @@ Rules:
 | POST | `/api/checkin` | `{"mood": 1-5, "sleep_hours": 0-24, "note": "text"}` | the stored check-in with `id` and `t` (ISO time) |
 | GET | `/api/spaceweather` | | `{"source": "NOAA SWPC GOES" or "fallback", "proton_flux_pfu": 0.3, "s_scale": 0, "updated": "ISO time"}` |
 
-Scenario ids: `nominal`, `solar_particle_event`, `hypoxia`, `loose_electrode`, `fatigue`.
+Scenario ids: `nominal`, `solar_particle_event`, `hypoxia`, `loose_electrode`, `fatigue`, `galaxy_watch`.
+
+### Galaxy Watch ingest (additive)
+
+Optional phone→backend bridge for contest demos. Does not replace the simulator; use scenario `galaxy_watch` or the UI “Galaxy Watch demo” mode.
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| POST | `/api/ingest/watch` | watch aggregates (`hr` / `spo2` / `temp` / `hrv_rmssd` nullable) | `{ok, mapped, last_sync, …}` |
+| GET | `/api/ingest/watch/status` | | last sync + which CONTRACT keys are available |
+
+Missing sensors are **`null`** in the ingest body — never invent clinical values. WS `frame` keys stay present for existing clients; in `galaxy_watch` the server may add `source: "watch"` and a `watch` block (`connected`, `last_sync`, `available`). Waveform channels are zeroed in that scenario because third-party apps do not receive raw ECG/PPG from the watch. See project store doc `samsung-watch-bridge.md`.
 
 ## Local database
 

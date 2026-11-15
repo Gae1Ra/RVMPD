@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse, Response
 from . import analysis, llm, tts
 from .alerts import AlertTracker
 from .db import Database, now_iso
+from .ingest.watch import WatchIngest, WatchStore
 from .medical_ai import insight_from_vitals, provider_status
 from .medical_ai.models import VitalsSnapshot
 from .pipeline import Pipeline
@@ -32,13 +33,14 @@ log = logging.getLogger("vitalis.db")
 class Engine:
     """Runs simulator -> pipeline -> stats -> alerts and builds one frame per tick."""
 
-    def __init__(self, seed=None, db=None):
+    def __init__(self, seed=None, db=None, watch_store=None):
         self.db = None  # attached after the warm-up so those first seconds are not stored
         self.logged_alerts = set()
         self.sim = Simulator(seed)
         self.pipeline = Pipeline(self.sim.rng)
         self.stats = VitalStats()
         self.alerts = AlertTracker()
+        self.watch_store = watch_store or WatchStore()
         self.ticks = 0
         self.vitals = {}
         self.radiation = "green"
@@ -61,12 +63,28 @@ class Engine:
         except sqlite3.Error as e:  # a storage problem must not stop the live stream
             log.warning("Could not store samples: %s", e)
 
+    def _watch_mode(self) -> bool:
+        return self.sim.scenario.id == "galaxy_watch"
+
     def _advance(self):
         chunk = self.sim.step()
+        if self._watch_mode() and self.watch_store.last:
+            # Overlay last phone→API watch aggregate onto latent truth (nulls ignored).
+            chunk.truth = self.watch_store.overlay_truth(chunk.truth)
         self.pipeline.push(chunk)
         self.ticks += 1
         if self.pipeline.ready and self.ticks % TICKS_PER_VITALS_UPDATE == 0:
             values, sqi = self.pipeline.measure(chunk.truth)
+            if self._watch_mode():
+                # Watch cannot claim BP / RR; mark low SQI so UI can hide/distrust.
+                sqi = dict(sqi)
+                sqi["bp_sys"] = min(float(sqi.get("bp_sys", 1.0)), 0.15)
+                sqi["resp_rate"] = min(float(sqi.get("resp_rate", 1.0)), 0.15)
+                # Occasional SpO₂: trusted ~4 s every ~25 s of mission time.
+                if int(chunk.t) % 25 >= 4:
+                    sqi["spo2"] = min(float(sqi.get("spo2", 1.0)), 0.2)
+                if self.watch_store.last and self.watch_store.mapped.get("spo2") is None:
+                    sqi["spo2"] = min(float(sqi.get("spo2", 1.0)), 0.2)
             results = self.stats.update(values, sqi)
             self.radiation = radiation_status(chunk.truth["dose_rate"])
             self.vitals = {name: r.as_dict() for name, r in results.items()}
@@ -86,18 +104,47 @@ class Engine:
 
     def next_frame(self):
         chunk = self._advance()
-        return {
+        # Watch third parties do not get raw ECG/PPG — blank the scope in this scenario.
+        if self._watch_mode():
+            zeros = [0.0] * CHUNK
+            wave = {"fs": FS, "ecg": zeros, "ppg": zeros, "resp": zeros}
+        else:
+            wave = {
+                "fs": FS,
+                "ecg": chunk.ecg.round(4).tolist(),
+                "ppg": chunk.ppg.round(3).tolist(),
+                "resp": chunk.resp.round(3).tolist(),
+            }
+        frame = {
             "type": "frame",
             "t": round(chunk.t, 1),
             "scenario": self.sim.scenario.id,
-            "wave": {"fs": FS, "ecg": chunk.ecg.round(4).tolist(), "ppg": chunk.ppg.round(3).tolist(),
-                     "resp": chunk.resp.round(3).tolist()},
+            "wave": wave,
             "vitals": self.vitals,
             "radiation": {"dose_rate_usv_h": round(chunk.dose_rate, 1),
                           "dose_total_msv": round(chunk.dose_total_msv, 3), "status": self.radiation},
             "global": self.global_block,
             "alerts": self.alert_list,
         }
+        if self._watch_mode():
+            # Additive metadata; existing clients ignore unknown keys.
+            st = self.watch_store.status()
+            spo2_ok = float((self.vitals.get("spo2") or {}).get("sqi", 0)) >= 0.5
+            frame["source"] = "watch"
+            frame["watch"] = {
+                "connected": True,
+                "last_sync": st.get("last_sync") or now_iso(),
+                "device": st.get("device") or "galaxy_watch",
+                "available": {
+                    "hr": True,
+                    "spo2": spo2_ok,
+                    "temp": True,
+                    "hrv_rmssd": True,
+                    "resp_rate": False,
+                    "bp_sys": False,
+                },
+            }
+        return frame
 
 
 class ScenarioChange(BaseModel):
@@ -153,7 +200,8 @@ async def run_simulation(app):
 @contextlib.asynccontextmanager
 async def lifespan(app):
     app.state.db = Database()
-    app.state.engine = Engine(db=app.state.db)
+    app.state.watch_store = WatchStore()
+    app.state.engine = Engine(db=app.state.db, watch_store=app.state.watch_store)
     app.state.clients = set()
     task = asyncio.create_task(run_simulation(app))
     yield
@@ -263,6 +311,18 @@ def run_tts(body: TtsIn):
             content={"fallback": "browser", "reason": e.reason},
         )
     return Response(content=audio, media_type="audio/mpeg")
+
+
+@app.post("/api/ingest/watch")
+def ingest_watch(body: WatchIngest):
+    """Accept Galaxy Watch aggregates from the companion phone app (additive stub)."""
+    return app.state.watch_store.ingest(body)
+
+
+@app.get("/api/ingest/watch/status")
+def ingest_watch_status():
+    """Last watch sync / availability (no network to the watch)."""
+    return app.state.watch_store.status()
 
 
 @app.get("/api/medical-ai/status")

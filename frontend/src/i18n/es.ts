@@ -14,6 +14,26 @@ export const es = {
     wrist: 'Muñeca',
     title: 'Alternar entre Panel Unificado (1280px) y Reloj de Muñeca',
   },
+  dataSource: {
+    label: 'Fuente de datos',
+    simulator: 'Simulador',
+    galaxyWatch: 'Demo Galaxy Watch',
+  },
+  watchDemo: {
+    aria: 'Demo Galaxy Watch · VITALIS',
+    kicker: 'Samsung Galaxy Watch · puente al teléfono',
+    tagline: 'Solo lo que el reloj puede mostrar en una demo real.',
+    connected: 'Reloj sincronizado',
+    disconnected: 'Sin sincronización',
+    lastSync: 'Última sync {time}',
+    metricsTitle: 'Signos del reloj',
+    fromWatch: 'Desde el reloj',
+    skinTemp: 'Temp. de piel',
+    spo2Waiting: 'SpO₂ ocasional — esperando muestra',
+    hiddenNote:
+      'Sin ECG/PPG en vivo, sin presión arterial ni respiración: el reloj no los expone a terceros.',
+    disclaimer: 'Apoyo a la decisión · No es un diagnóstico médico',
+  },
   link: {
     live: 'En vivo',
     demo: 'Demo local',

@@ -16,6 +16,26 @@ export const en: Dictionary = {
     wrist: 'Wrist',
     title: 'Switch between Unified Panel (1280px) and Wrist Watch',
   },
+  dataSource: {
+    label: 'Data source',
+    simulator: 'Simulator',
+    galaxyWatch: 'Galaxy Watch demo',
+  },
+  watchDemo: {
+    aria: 'Galaxy Watch demo · VITALIS',
+    kicker: 'Samsung Galaxy Watch · phone bridge',
+    tagline: 'Only what the watch can typically expose in a real demo.',
+    connected: 'Watch synced',
+    disconnected: 'Not synced',
+    lastSync: 'Last sync {time}',
+    metricsTitle: 'Watch vitals',
+    fromWatch: 'From watch',
+    skinTemp: 'Skin temp',
+    spo2Waiting: 'Occasional SpO₂ — waiting for a sample',
+    hiddenNote:
+      'No live ECG/PPG, no blood pressure or respiration: the watch does not expose those to third parties.',
+    disclaimer: 'Decision support · Not a medical diagnosis',
+  },
   link: {
     live: 'Live',
     demo: 'Local demo',
