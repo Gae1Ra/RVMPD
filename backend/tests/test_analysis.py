@@ -199,7 +199,7 @@ def test_bedrock_path_marks_llm_with_default_model(monkeypatch, db):
     stats = analysis.window_stats(db, 10)
     report = llm.refine(stats, analysis.local_report(stats), db=db)
     assert report["engine"] == "llm"
-    assert report["model"] == "us.anthropic.claude-haiku-5-5"
+    assert report["model"] == "us.anthropic.claude-sonnet-4-6"
     assert capture["max_tokens"] <= 1500
     assert capture["output_config"]["effort"] == "low"
 
@@ -213,7 +213,7 @@ def test_make_client_defaults_to_runtime_bedrock(monkeypatch):
     monkeypatch.delenv("VITALIS_BEDROCK_ENDPOINT", raising=False)
     client, model = llm.make_client()
     assert isinstance(client, __import__("anthropic").AnthropicBedrock)
-    assert model == "us.anthropic.claude-haiku-5-5"
+    assert model == "us.anthropic.claude-sonnet-4-6"
 
 
 def test_make_client_mantle_when_endpoint_set(monkeypatch):
@@ -225,7 +225,7 @@ def test_make_client_mantle_when_endpoint_set(monkeypatch):
     monkeypatch.delenv("VITALIS_MODEL", raising=False)
     client, model = llm.make_client()
     assert isinstance(client, __import__("anthropic").AnthropicBedrockMantle)
-    assert model == "anthropic.claude-haiku-5-5"
+    assert model == "anthropic.claude-sonnet-4-6"
 
 
 @pytest.mark.parametrize("exc,reason", [
@@ -292,8 +292,8 @@ def test_successful_call_records_spend(monkeypatch, db):
     stats = analysis.window_stats(db, 10)
     report = llm.refine(stats, analysis.local_report(stats), db=db)
     assert report["engine"] == "llm"
-    # 1M in @ $0.10 + 1M out @ $0.50 = $0.60
-    assert abs(db.get_llm_spend_usd() - 0.60) < 1e-9
+    # 1M in @ $3.30 + 1M out @ $16.50 = $19.80
+    assert abs(db.get_llm_spend_usd() - 19.80) < 1e-9
 
 
 def test_analysis_engine_route(client, monkeypatch):
@@ -308,7 +308,7 @@ def test_analysis_engine_route(client, monkeypatch):
     monkeypatch.delenv("VITALIS_BEDROCK_ENDPOINT", raising=False)
     body = client.get("/api/analysis/engine").json()
     assert body["provider"] == "bedrock" and body["configured"] is True
-    assert body["model"] == "us.anthropic.claude-haiku-5-5"
+    assert body["model"] == "us.anthropic.claude-sonnet-4-6"
 
 
 def test_analysis_lang_passed_to_prompt(monkeypatch, client, db):

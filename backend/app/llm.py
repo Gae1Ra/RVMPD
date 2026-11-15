@@ -24,17 +24,17 @@ except ImportError:
     pass
 
 # Anthropic API id; Bedrock defaults depend on endpoint (see bedrock_endpoint / default_bedrock_model).
-# AWS model card: foundation id anthropic.claude-haiku-5-5; bedrock-runtime in us-east-2 is
-# inference-profile-only → us.anthropic.claude-haiku-5-5. Mantle uses the foundation id.
-# Live success of either id is not verified in this repo — smoke tries both and reports.
-DEFAULT_MODEL = "claude-haiku-5-5"
+# AWS model card: foundation id anthropic.claude-sonnet-4-6; bedrock-runtime in us-east-2 is
+# inference-profile-only → us.anthropic.claude-sonnet-4-6. Mantle uses the foundation id.
+# Override anytime with VITALIS_MODEL. Live success of either id is not verified here — smoke tries both.
+DEFAULT_MODEL = "claude-sonnet-4-6"
 DEFAULT_BEDROCK_MODEL = f"anthropic.{DEFAULT_MODEL}"
 DEFAULT_BEDROCK_RUNTIME_PROFILE = f"us.{DEFAULT_BEDROCK_MODEL}"
 MAX_TOKENS = 1500
 TIMEOUT_S = 20.0
 DEFAULT_SPEND_CAP_USD = 0.50
-DEFAULT_INPUT_USD_PER_MTOK = 0.10
-DEFAULT_OUTPUT_USD_PER_MTOK = 0.50
+DEFAULT_INPUT_USD_PER_MTOK = 3.30
+DEFAULT_OUTPUT_USD_PER_MTOK = 16.50
 MIN_CALL_INTERVAL_S = 30.0
 MAX_SESSION_CALLS = 100
 HRP_NOTES_PATH = Path(__file__).resolve().parent / "context" / "hrp_notes.md"

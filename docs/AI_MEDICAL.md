@@ -55,8 +55,9 @@ shape (UI demos work) using the mock rules with `provider: "disabled"` and
 2. Bedrock → Knowledge Bases → create with **S3 Vectors** (avoid Quick create /
    OpenSearch Serverless). Sync; note `KNOWLEDGE_BASE_ID`.
 3. Bedrock → Guardrails → contextual grounding + PII filters; note `GUARDRAIL_ID`.
-4. Prefer serverless on-demand models (Claude Sonnet or Amazon Nova Pro) — do
-   **not** leave GPU endpoints running.
+4. Prefer serverless on-demand models (Claude Sonnet 4.6 or Amazon Nova Pro) — do
+   **not** leave GPU endpoints running. The analysis refine path (`llm.py`) defaults
+   to `us.anthropic.claude-sonnet-4-6` via `VITALIS_MODEL` (still fully configurable).
 5. Install `boto3`, set env vars, restart uvicorn:
 
 ```
@@ -83,7 +84,7 @@ Also set billing budgets at $15 / $50 as the guide recommends.
 |---|---|
 | **Mock provider (default)** | Offline demos, CI, no credentials |
 | **Bedrock native (Claude / Nova) + KB** | AWS track, credits available |
-| **Existing `llm.py` Anthropic refine** | Rewrite `/api/analysis` prose (already in tree) |
+| **Existing `llm.py` Anthropic refine** | Rewrite `/api/analysis` prose (default Claude Sonnet 4.6; override with `VITALIS_MODEL`) |
 | Ollama / Colab MedGemma / Gemini / Groq | External; wire a new provider implementing the same interface |
 
 ## Additive API (proposed CONTRACT appendix)

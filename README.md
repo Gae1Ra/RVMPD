@@ -102,10 +102,10 @@ A language model can write the report from the same numbers. This is optional an
 | `ANTHROPIC_API_KEY` | Use the Anthropic API |
 | `VITALIS_USE_BEDROCK=1` | Use AWS Bedrock (`AWS_BEARER_TOKEN_BEDROCK`) |
 | `VITALIS_BEDROCK_ENDPOINT` | `runtime` (default, `AnthropicBedrock`) or `mantle` |
-| `VITALIS_MODEL` | Model id; runtime default `us.anthropic.claude-haiku-5-5`; Mantle `anthropic.claude-haiku-5-5` |
+| `VITALIS_MODEL` | Model id (configurable); runtime default `us.anthropic.claude-sonnet-4-6`; Mantle `anthropic.claude-sonnet-4-6` |
 | `VITALIS_DB` | Path of the database file |
 | `VITALIS_SPEND_CAP_USD` | Hard spend cap (default `0.50`) |
-| `VITALIS_INPUT_USD_PER_MTOK` / `VITALIS_OUTPUT_USD_PER_MTOK` | Haiku 5.5 prices (default `0.10` / `0.50`) |
+| `VITALIS_INPUT_USD_PER_MTOK` / `VITALIS_OUTPUT_USD_PER_MTOK` | Claude Sonnet 4.6 prices (default `3.30` / `16.50`) |
 
 If the model is not configured, fails, hits the spend cap, or is rate-limited, the on-board engine answers. The model only receives aggregated statistics, never raw readings. Copy `backend/.env.example` to `backend/.env` for local secrets (never commit `.env`).
 
@@ -149,7 +149,7 @@ Haz esto **en orden**:
    | `AWS_REGION` | `us-east-2` (debe coincidir con la región de la clave) |
    | `AWS_BEARER_TOKEN_BEDROCK` | tu API key corta de Bedrock (no access keys IAM) |
    | `VITALIS_BEDROCK_ENDPOINT` | `runtime` (default, `bedrock-runtime`) o `mantle` |
-   | `VITALIS_MODEL` | runtime: `us.anthropic.claude-haiku-5-5`; Mantle: `anthropic.claude-haiku-5-5` (ids documentados por AWS) |
+   | `VITALIS_MODEL` | runtime: `us.anthropic.claude-sonnet-4-6`; Mantle: `anthropic.claude-sonnet-4-6` (configurable; ids documentados por AWS) |
    | `VITALIS_SPEND_CAP_USD` | `0.50` al empezar (súbelo después; ver paso 8) |
 
 5. **Smoke test** (llamada barata; necesita la clave en `.env`):

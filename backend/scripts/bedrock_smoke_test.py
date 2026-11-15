@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Minimal real Bedrock call (Haiku 5.5). Default: bedrock-runtime via AnthropicBedrock.
+"""Minimal real Bedrock call (Claude Sonnet 4.6). Default: bedrock-runtime via AnthropicBedrock.
 
 Tries foundation id then US geo inference profile when VITALIS_MODEL is unset.
 Never prints the API key. Run with your short-lived key in backend/.env.
@@ -28,8 +28,8 @@ ENDPOINT = (os.environ.get("VITALIS_BEDROCK_ENDPOINT") or "runtime").strip().low
 if ENDPOINT != "mantle":
     ENDPOINT = "runtime"
 
-FOUNDATION_ID = "anthropic.claude-haiku-5-5"
-RUNTIME_PROFILE = "us.anthropic.claude-haiku-5-5"
+FOUNDATION_ID = "anthropic.claude-sonnet-4-6"
+RUNTIME_PROFILE = "us.anthropic.claude-sonnet-4-6"
 INVALID_TOKEN_MSG = (
     "token inválido: revisa que esté completo, que no haya vencido y que corresponda a la región"
 )
@@ -50,7 +50,7 @@ def classify(exc: BaseException) -> str:
         return f"invalid_credential — {INVALID_TOKEN_MSG}"
     if any(k in text for k in ("not enabled", "not authorized", "access denied", "model not found",
                                "isn't supported", "not available", "unknown model", "validationexception")):
-        return "model_not_enabled — habilita Claude Haiku 5.5 / prueba el otro id (foundation vs us. profile)"
+        return "model_not_enabled — habilita Claude Sonnet 4.6 / prueba el otro id (foundation vs us. profile)"
     if any(k in text for k in ("region", "endpoint", "name or service not known")):
         return ("wrong_region_or_id — AWS_REGION debe coincidir con la clave (us-east-2); "
                 f"runtime profile {RUNTIME_PROFILE}; Mantle foundation {FOUNDATION_ID}")
