@@ -2,6 +2,7 @@ import React from 'react'
 import type { Role, Surface } from '../types'
 import type { LinkMode } from '../hooks/useTelemetry'
 import type { VoiceProviderLabel } from '../voice/service'
+import type { DataSourceMode } from './WatchDemoApp'
 import { ScenarioSelector } from './ScenarioSelector'
 import { LangSwitcher, useT } from '../i18n'
 
@@ -16,6 +17,8 @@ interface HeaderProps {
   linkMode?: LinkMode
   scenarioId: string
   onSetScenario: (id: string) => Promise<void>
+  dataSource: DataSourceMode
+  onDataSourceChange: (mode: DataSourceMode) => void
   voiceMuted?: boolean
   voiceVolume?: number
   voiceProvider?: VoiceProviderLabel
@@ -34,6 +37,8 @@ export const Header: React.FC<HeaderProps> = ({
   linkMode = 'connecting',
   scenarioId,
   onSetScenario,
+  dataSource,
+  onDataSourceChange,
   voiceMuted = false,
   voiceVolume = 0.85,
   voiceProvider = 'unknown',
@@ -49,6 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
       : voiceProvider === 'elevenlabs'
         ? t.voice.statusEleven
         : t.voice.statusBrowser
+  const watchMode = dataSource === 'galaxy_watch'
 
   return (
     <header className="vitalis-glass px-4 py-3 flex flex-wrap items-center justify-between gap-3">
@@ -78,35 +84,69 @@ export const Header: React.FC<HeaderProps> = ({
 
       <div
         role="tablist"
-        aria-label={t.roles.tablist}
+        aria-label={t.dataSource.label}
         className="p-1 rounded-[12px] flex items-center gap-1 border w-full sm:w-auto"
         style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
       >
         <button
           role="tab"
-          aria-selected={role === 'medico'}
-          onClick={() => onRoleChange('medico')}
-          className="touch-target flex-1 sm:flex-none px-4 py-2 rounded-[10px] text-[14px] font-semibold transition cursor-pointer"
+          aria-selected={!watchMode}
+          onClick={() => onDataSourceChange('simulator')}
+          className="touch-target flex-1 sm:flex-none px-3 py-2 rounded-[10px] text-[13px] font-semibold transition cursor-pointer"
           style={{
-            background: role === 'medico' ? 'var(--accent)' : 'transparent',
-            color: role === 'medico' ? 'var(--on-accent)' : 'var(--text)',
+            background: !watchMode ? 'var(--accent)' : 'transparent',
+            color: !watchMode ? 'var(--on-accent)' : 'var(--text)',
           }}
         >
-          {t.roles.medico}
+          {t.dataSource.simulator}
         </button>
         <button
           role="tab"
-          aria-selected={role === 'astronauta'}
-          onClick={() => onRoleChange('astronauta')}
-          className="touch-target flex-1 sm:flex-none px-4 py-2 rounded-[10px] text-[14px] font-semibold transition cursor-pointer"
+          aria-selected={watchMode}
+          onClick={() => onDataSourceChange('galaxy_watch')}
+          className="touch-target flex-1 sm:flex-none px-3 py-2 rounded-[10px] text-[13px] font-semibold transition cursor-pointer"
           style={{
-            background: role === 'astronauta' ? 'var(--accent)' : 'transparent',
-            color: role === 'astronauta' ? 'var(--on-accent)' : 'var(--text)',
+            background: watchMode ? 'var(--accent)' : 'transparent',
+            color: watchMode ? 'var(--on-accent)' : 'var(--text)',
           }}
         >
-          {t.roles.astronauta}
+          {t.dataSource.galaxyWatch}
         </button>
       </div>
+
+      {!watchMode && (
+        <div
+          role="tablist"
+          aria-label={t.roles.tablist}
+          className="p-1 rounded-[12px] flex items-center gap-1 border w-full sm:w-auto"
+          style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
+        >
+          <button
+            role="tab"
+            aria-selected={role === 'medico'}
+            onClick={() => onRoleChange('medico')}
+            className="touch-target flex-1 sm:flex-none px-4 py-2 rounded-[10px] text-[14px] font-semibold transition cursor-pointer"
+            style={{
+              background: role === 'medico' ? 'var(--accent)' : 'transparent',
+              color: role === 'medico' ? 'var(--on-accent)' : 'var(--text)',
+            }}
+          >
+            {t.roles.medico}
+          </button>
+          <button
+            role="tab"
+            aria-selected={role === 'astronauta'}
+            onClick={() => onRoleChange('astronauta')}
+            className="touch-target flex-1 sm:flex-none px-4 py-2 rounded-[10px] text-[14px] font-semibold transition cursor-pointer"
+            style={{
+              background: role === 'astronauta' ? 'var(--accent)' : 'transparent',
+              color: role === 'astronauta' ? 'var(--on-accent)' : 'var(--text)',
+            }}
+          >
+            {t.roles.astronauta}
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
         <div className="font-mono tabular-nums text-[14px] flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
@@ -117,7 +157,7 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </div>
 
-        <ScenarioSelector current={scenarioId} onSelect={onSetScenario} />
+        {!watchMode && <ScenarioSelector current={scenarioId} onSelect={onSetScenario} />}
 
         <LangSwitcher />
 
@@ -165,32 +205,34 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        <div
-          className="p-1 rounded-[12px] flex items-center gap-0.5 border"
-          style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
-          title={t.surfaces.title}
-        >
-          <button
-            onClick={() => onSurfaceChange('panel')}
-            className="touch-target px-3 py-2 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
-            style={{
-              background: surface === 'panel' ? 'var(--accent)' : 'transparent',
-              color: surface === 'panel' ? 'var(--on-accent)' : 'var(--text)',
-            }}
+        {!watchMode && (
+          <div
+            className="p-1 rounded-[12px] flex items-center gap-0.5 border"
+            style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
+            title={t.surfaces.title}
           >
-            {t.surfaces.panel}
-          </button>
-          <button
-            onClick={() => onSurfaceChange('wrist')}
-            className="touch-target px-3 py-2 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
-            style={{
-              background: surface === 'wrist' ? 'var(--accent)' : 'transparent',
-              color: surface === 'wrist' ? 'var(--on-accent)' : 'var(--text)',
-            }}
-          >
-            {t.surfaces.wrist}
-          </button>
-        </div>
+            <button
+              onClick={() => onSurfaceChange('panel')}
+              className="touch-target px-3 py-2 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
+              style={{
+                background: surface === 'panel' ? 'var(--accent)' : 'transparent',
+                color: surface === 'panel' ? 'var(--on-accent)' : 'var(--text)',
+              }}
+            >
+              {t.surfaces.panel}
+            </button>
+            <button
+              onClick={() => onSurfaceChange('wrist')}
+              className="touch-target px-3 py-2 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
+              style={{
+                background: surface === 'wrist' ? 'var(--accent)' : 'transparent',
+                color: surface === 'wrist' ? 'var(--on-accent)' : 'var(--text)',
+              }}
+            >
+              {t.surfaces.wrist}
+            </button>
+          </div>
+        )}
 
         <button
           onClick={onToggleTheme}

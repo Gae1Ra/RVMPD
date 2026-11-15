@@ -39,6 +39,11 @@ SCENARIOS = {s.id: s for s in [
     _scenario("fatigue", "Fatigue",
               "Low heart rate variability, slightly raised heart rate and temperature.",
               rmssd=22.0, hr=74.0, temp=36.9),
+    # Watch-realistic subset for the Samsung Galaxy Watch contest demo.
+    # SpO₂ is intermittent in the Engine overlay; BP/RR are not claimed by the watch UI.
+    _scenario("galaxy_watch", "Galaxy Watch demo",
+              "Watch-like vitals: HR continuous, occasional SpO₂, skin temperature; no ECG/PPG waveforms from the watch.",
+              hr=70.0, rmssd=44.0, spo2=97.5, temp=36.5, resp=14.0, bp_sys=117.0, ecg_quality=0.35),
 ]}
 
 # Seconds the latent values take to follow a new scenario (about 3x this to settle).
