@@ -5,6 +5,8 @@ import logging
 import sqlite3
 
 import numpy as np
+from typing import Literal
+
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -102,6 +104,7 @@ class ScenarioChange(BaseModel):
 
 class AnalysisIn(BaseModel):
     minutes: int = Field(60, ge=1, le=1440)
+    lang: Literal["en", "es"] = "en"
 
 
 class CheckInIn(BaseModel):
@@ -208,8 +211,10 @@ def database_stats():
 # A plain `def` route runs in a worker thread, so the analysis never blocks the event loop
 @app.post("/api/analysis")
 def run_analysis(body: AnalysisIn | None = None):
-    stats = analysis.window_stats(app.state.db, (body or AnalysisIn()).minutes)
-    return app.state.db.save_report(llm.refine(stats, analysis.local_report(stats)))
+    body = body or AnalysisIn()
+    stats = analysis.window_stats(app.state.db, body.minutes)
+    local = analysis.local_report(stats)
+    return app.state.db.save_report(llm.refine(stats, local, db=app.state.db, lang=body.lang))
 
 
 @app.get("/api/analysis/latest")
@@ -218,6 +223,12 @@ def latest_analysis():
     if report is None:
         raise HTTPException(status_code=404, detail="No analysis has been run yet")
     return report
+
+
+@app.get("/api/analysis/engine")
+def analysis_engine():
+    """Configured analysis provider and spend (no network)."""
+    return llm.engine_status(app.state.db)
 
 
 @app.get("/api/spaceweather")

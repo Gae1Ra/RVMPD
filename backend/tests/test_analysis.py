@@ -148,3 +148,141 @@ def test_model_layer_marks_a_valid_reply(monkeypatch, db):
     stats = analysis.window_stats(db, 10)
     report = llm.refine(stats, analysis.local_report(stats))
     assert report["engine"] == "llm" and report["model"] == "test-model" and report["summary"] == "All normal."
+
+
+class _Usage:
+    def __init__(self, inp=100, out=50):
+        self.input_tokens = inp
+        self.output_tokens = out
+
+
+def _ok_client(model_out=None, token_usage=None, raise_exc=None, capture=None):
+    report = model_out or llm.ModelReport(summary="Refined.", findings=[], facts=["a", "b"])
+    reply_usage = token_usage or _Usage()
+
+    class Reply:
+        parsed_output = report
+        usage = reply_usage
+
+    class Client:
+        class messages:
+            @staticmethod
+            def parse(**kwargs):
+                if capture is not None:
+                    capture.update(kwargs)
+                if raise_exc is not None:
+                    raise raise_exc
+                return Reply
+
+    return Client()
+
+
+@pytest.fixture(autouse=True)
+def _reset_llm_session():
+    llm.reset_session_limits()
+    yield
+    llm.reset_session_limits()
+
+
+def test_bedrock_path_marks_llm_with_default_model(monkeypatch, db):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("VITALIS_USE_BEDROCK", "1")
+    monkeypatch.setenv("AWS_REGION", "us-east-2")
+    monkeypatch.delenv("VITALIS_MODEL", raising=False)
+    capture = {}
+    monkeypatch.setattr(llm, "make_client", lambda: (_ok_client(capture=capture), llm.DEFAULT_BEDROCK_MODEL))
+    fill(db)
+    stats = analysis.window_stats(db, 10)
+    report = llm.refine(stats, analysis.local_report(stats), db=db)
+    assert report["engine"] == "llm"
+    assert report["model"] == "anthropic.claude-haiku-5-5"
+    assert capture["max_tokens"] <= 1500
+    assert capture["output_config"]["effort"] == "low"
+
+
+@pytest.mark.parametrize("exc", [
+    TimeoutError("too slow"),
+    RuntimeError("ExpiredToken: credential expired"),
+    RuntimeError("ValidationException: model is not enabled"),
+    RuntimeError("wrong region endpoint mismatch"),
+    ValueError("invalid response / pydantic validation error"),
+    RuntimeError("permissions denied by policy"),
+])
+def test_model_failures_fall_back_to_local(monkeypatch, db, exc):
+    monkeypatch.setattr(llm, "make_client", lambda: (_ok_client(raise_exc=exc), "test-model"))
+    fill(db)
+    stats = analysis.window_stats(db, 10)
+    local = analysis.local_report(stats)
+    assert llm.refine(stats, local, db=db) == local
+
+
+def test_spend_cap_skips_model(monkeypatch, db):
+    monkeypatch.setenv("VITALIS_SPEND_CAP_USD", "0.50")
+    db.add_llm_spend_usd(0.50)
+    called = {"n": 0}
+
+    class Client:
+        class messages:
+            @staticmethod
+            def parse(**_):
+                called["n"] += 1
+                raise AssertionError("should not call model")
+
+    monkeypatch.setattr(llm, "make_client", lambda: (Client(), "test-model"))
+    fill(db)
+    stats = analysis.window_stats(db, 10)
+    local = analysis.local_report(stats)
+    report = llm.refine(stats, local, db=db)
+    assert called["n"] == 0
+    assert report["engine"] == "local"
+    assert "spend cap" in report["summary"].lower()
+
+
+def test_rate_limit_skips_second_call(monkeypatch, db):
+    monkeypatch.setattr(llm, "make_client", lambda: (_ok_client(), "test-model"))
+    fill(db)
+    stats = analysis.window_stats(db, 10)
+    local = analysis.local_report(stats)
+    first = llm.refine(stats, local, db=db)
+    second = llm.refine(stats, local, db=db)
+    assert first["engine"] == "llm"
+    assert second["engine"] == "local"
+    assert "rate limit" in second["summary"].lower()
+
+
+def test_successful_call_records_spend(monkeypatch, db):
+    monkeypatch.setattr(llm, "make_client",
+                        lambda: (_ok_client(token_usage=_Usage(inp=1_000_000, out=1_000_000)), "test-model"))
+    fill(db)
+    stats = analysis.window_stats(db, 10)
+    report = llm.refine(stats, analysis.local_report(stats), db=db)
+    assert report["engine"] == "llm"
+    # 1M in @ $0.10 + 1M out @ $0.50 = $0.60
+    assert abs(db.get_llm_spend_usd() - 0.60) < 1e-9
+
+
+def test_analysis_engine_route(client, monkeypatch):
+    for name in ("ANTHROPIC_API_KEY", "VITALIS_USE_BEDROCK", "VITALIS_MODEL"):
+        monkeypatch.delenv(name, raising=False)
+    body = client.get("/api/analysis/engine").json()
+    assert body["provider"] == "local"
+    assert body["configured"] is False
+    assert body["model"] is None
+    assert "spent_usd" in body and "cap_usd" in body
+    monkeypatch.setenv("VITALIS_USE_BEDROCK", "1")
+    body = client.get("/api/analysis/engine").json()
+    assert body["provider"] == "bedrock" and body["configured"] is True
+    assert body["model"] == "anthropic.claude-haiku-5-5"
+
+
+def test_analysis_lang_passed_to_prompt(monkeypatch, client, db):
+    capture = {}
+    monkeypatch.setattr(llm, "make_client", lambda: (_ok_client(capture=capture), "test-model"))
+    # Use refine directly so we don't depend on the live app DB having samples
+    fill(db)
+    stats = analysis.window_stats(db, 10)
+    llm.refine(stats, analysis.local_report(stats), db=db, lang="es")
+    assert "Respond in Spanish" in capture["system"]
+    # Route accepts lang without error
+    assert client.post("/api/analysis", json={"minutes": 5, "lang": "es"}).status_code == 200
+    assert client.post("/api/analysis", json={"minutes": 5, "lang": "en"}).status_code == 200

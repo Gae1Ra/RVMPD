@@ -68,11 +68,29 @@ A language model can write the report from the same numbers. This is optional an
 | Variable | Effect |
 |---|---|
 | `ANTHROPIC_API_KEY` | Use the Anthropic API |
-| `VITALIS_USE_BEDROCK=1` | Use AWS Bedrock with the machine's AWS credentials |
-| `VITALIS_MODEL` | Model id, default `claude-opus-5-5` |
+| `VITALIS_USE_BEDROCK=1` | Use AWS Bedrock Mantle (`AWS_BEARER_TOKEN_BEDROCK`) |
+| `VITALIS_MODEL` | Model id, default `claude-haiku-5-5` (Bedrock: `anthropic.claude-haiku-5-5`) |
 | `VITALIS_DB` | Path of the database file |
+| `VITALIS_SPEND_CAP_USD` | Hard spend cap (default `0.50`) |
+| `VITALIS_INPUT_USD_PER_MTOK` / `VITALIS_OUTPUT_USD_PER_MTOK` | Haiku 5.5 prices (default `0.10` / `0.50`) |
 
-If the model is not configured or fails, the on-board engine answers. The model only receives aggregated statistics, never raw readings. The model path has not been run against a live key yet.
+If the model is not configured, fails, hits the spend cap, or is rate-limited, the on-board engine answers. The model only receives aggregated statistics, never raw readings. Copy `backend/.env.example` to `backend/.env` for local secrets (never commit `.env`).
+
+### Usar AWS Bedrock
+
+Para principiantes (cuenta compartida de hackathon; **no** crear usuarios IAM):
+
+1. En la consola de Amazon Bedrock (región **us-east-2**), genera una **API key de corta duración** (máx. 12 h).
+2. Copia `backend/.env.example` → `backend/.env` y rellena:
+   - `VITALIS_USE_BEDROCK=1`
+   - `AWS_REGION=us-east-2` (debe coincidir con la región de la clave)
+   - `AWS_BEARER_TOKEN_BEDROCK=…` (la clave corta; no uses access keys IAM)
+   - `VITALIS_MODEL=anthropic.claude-haiku-5-5` (Mantle). Si usas `bedrock-runtime` en lugar de Mantle, us-east-2 suele exigir el perfil `us.anthropic.claude-haiku-5-5`.
+3. Instala deps (`pip install -r requirements.txt`) y arranca el backend.
+4. Comprueba sin gastar mucho: `cd backend && python scripts/bedrock_smoke_test.py`
+5. Renueva la clave cada ≤12 h. Si ves en logs “credencial vencida, genera una nueva”, regenera el token y sigue; el análisis local sigue funcionando.
+6. El tope de gasto por defecto es **$0.50** (`VITALIS_SPEND_CAP_USD`). Súbelo solo cuando quieras (presupuesto compartido ~$10). También hay 1 llamada LLM / 30 s y máx. 100 por proceso del servidor.
+7. Estado sin red: `GET /api/analysis/engine` → provider, model, spent_usd, cap_usd.
 
 The data has no real sensor behind it yet. A simulator produces the signals, behind the same interface a Bluetooth or serial reader would use.
 
