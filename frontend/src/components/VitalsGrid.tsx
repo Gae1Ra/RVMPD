@@ -1,57 +1,108 @@
-import { fmt, fmtDelta, METRIC_KEYS, METRICS, TRUST_LIMIT } from '../meta'
-import type { History } from '../useTelemetry'
-import type { Frame, MetricKey } from '../types'
-import { StatusBadge, type Tone } from './Status'
+import React from 'react'
+import type { Indicator, IndicatorId, Role } from '../types'
+import { formatEs, getIndicatorLevel, getLevelMeta } from '../constants'
+import { LevelShape } from './LevelShape'
 
-function Sparkline({ values }: { values: number[] }) {
-  if (values.length < 2) return <svg className="spark" aria-hidden="true" />
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const span = Math.max(max - min, Math.abs(max) * 0.02, 0.1)
-  const mid = (max + min) / 2
-  const points = values
-    .map((v, i) => `${((i / (values.length - 1)) * 100).toFixed(2)},${(14 - ((v - mid) / span) * 24).toFixed(2)}`)
-    .join(' ')
-  return (
-    <svg className="spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">
-      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-    </svg>
-  )
+interface VitalsGridProps {
+  indicators: Indicator[]
+  selectedId: IndicatorId
+  role: Role
+  onSelect: (id: IndicatorId) => void
+  onOpenInfo: (id: IndicatorId) => void
 }
 
-interface Props {
-  frame: Frame
-  history: History
-  onOpen: (key: MetricKey) => void
-}
+export const VitalsGrid: React.FC<VitalsGridProps> = ({
+  indicators,
+  selectedId,
+  role,
+  onSelect,
+  onOpenInfo,
+}) => {
+  const isAstro = role === 'astronauta'
 
-export function VitalsGrid({ frame, history, onOpen }: Props) {
   return (
-    <section aria-label="Vitals" className="vitals-grid">
-      {METRIC_KEYS.map((key) => {
-        const v = frame.vitals[key]
-        const meta = METRICS[key]
-        const untrusted = v.sqi < TRUST_LIMIT
-        const tone: Tone = untrusted ? 'none' : v.status
+    <section
+      aria-label="Signos vitales monitoreados"
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5"
+    >
+      {indicators.map((ind) => {
+        const level = getIndicatorLevel(ind)
+        const meta = getLevelMeta(level)
+        const isSelected = selectedId === ind.id
+        const label = isAstro ? ind.astroName : ind.abbr
+        const valDisplay =
+          ind.id === 'pa'
+            ? `${ind.current}/${ind.diastolic ?? 78}`
+            : formatEs(ind.current, ind.decimals)
+
         return (
-          <button key={key} type="button" className={`card vital tone-edge-${tone}`} onClick={() => onOpen(key)}>
-            <span className="vital-name">{meta.name}</span>
-            {untrusted ? (
-              <span className="vital-value vital-untrusted">Sensor check</span>
-            ) : (
-              <span className="vital-value num">
-                <b>{fmt(v.value, meta.decimals)}</b>
-                <small>{v.unit}</small>
+          <article
+            key={ind.id}
+            onClick={() => onSelect(ind.id)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onSelect(ind.id)
+              }
+            }}
+            aria-label={`${label}: ${valDisplay} ${ind.unit}, estado ${meta.label}`}
+            className={`vitalis-surface p-4 cursor-pointer flex flex-col justify-between gap-2 ${
+              isSelected ? 'vitalis-card-selected' : ''
+            }`}
+          >
+            {/* Fila superior: Forma + Nombre + Estado / Botón '?' */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <LevelShape level={level} size={15} />
+                <span className="text-[15px] font-semibold">{label}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[14px] font-medium" style={{ color: meta.colorVar }}>
+                  {meta.label}
+                </span>
+                {isAstro && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onOpenInfo(ind.id)
+                    }}
+                    aria-label={`¿Qué mide ${ind.astroName}?`}
+                    className="w-7 h-7 rounded-full border text-[14px] font-mono font-semibold flex items-center justify-center cursor-pointer transition hover:opacity-80"
+                    style={{
+                      borderColor: 'var(--line)',
+                      background: 'var(--pill-bg)',
+                      color: 'var(--text)',
+                    }}
+                  >
+                    ?
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Fila central: Valor tabular grande + Unidad + Rango individual */}
+            <div className="flex items-baseline justify-between gap-2 my-1">
+              <div className="flex items-baseline gap-1.5">
+                <span className="font-mono tabular-nums text-[36px] sm:text-[40px] font-semibold leading-none tracking-tight">
+                  {valDisplay}
+                </span>
+                <span className="text-[15px] font-medium" style={{ color: 'var(--text2)' }}>
+                  {ind.unit}
+                </span>
+              </div>
+              <span className="font-mono tabular-nums text-[14px]" style={{ color: 'var(--text2)' }}>
+                {ind.rangeText}
               </span>
-            )}
-            <span className="vital-delta num muted">
-              {untrusted ? 'Reading not trusted' : `${fmtDelta(v.delta, meta.decimals)} vs baseline`}
-            </span>
-            <span className={`spark-wrap tone-${tone}`}>
-              <Sparkline values={history[key]} />
-            </span>
-            <StatusBadge tone={tone} />
-          </button>
+            </div>
+
+            {/* Fila inferior: Subtítulo clínico o explicación llana en modo Astronauta */}
+            <div className="text-[14px] truncate" style={{ color: 'var(--text2)' }}>
+              {isAstro ? ind.plainDesc : ind.clinicalName}
+            </div>
+          </article>
         )
       })}
     </section>

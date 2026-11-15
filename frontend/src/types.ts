@@ -1,5 +1,66 @@
-export type Status = 'green' | 'amber' | 'red'
+// Types for VITALIS v2 (SPEC.md)
+export type IndicatorId = 'fc' | 'spo2' | 'pa' | 'fr' | 'temp' | 'hrv'
 
+export type Level = 0 | 1 | 2 | 3
+
+export type Role = 'medico' | 'astronauta'
+
+export type Surface = 'panel' | 'wrist'
+
+export type TimeRange = 'vivo' | '24h' | '7d'
+
+export type SimPhase = 'off' | 'rising' | 'recovering'
+
+export type AiQuery = 'default' | 'resumen24h' | 'tendencia' | 'protocolo'
+
+export interface Indicator {
+  id: IndicatorId
+  abbr: string
+  astroName: string
+  clinicalName: string
+  unit: string
+  decimals: number
+  base: number
+  current: number
+  diastolic?: number
+  prevEvent: number
+  prevDiastolic?: number
+  ref: [number, number]
+  warn: [number, number]
+  crit: [number, number]
+  rangeText: string
+  chartMin: number
+  chartMax: number
+  plainDesc: string
+  whatMeasures: string
+  whenNotify: string
+}
+
+export interface SeriesPoint {
+  val: number
+  label: string
+  isEvent?: boolean
+}
+
+export interface Mission {
+  id: string
+  title: string
+  xp: number
+  done: boolean
+  isExercise: boolean
+}
+
+export interface LevelMeta {
+  level: Level
+  label: 'Normal' | 'Observación' | 'Advertencia' | 'Crítico'
+  globalTitle: 'Todo en orden' | 'En observación' | 'Haz una pausa' | 'Avisa ahora'
+  colorVar: string
+  bgVar: string
+  shape: 'circle' | 'diamond' | 'triangle' | 'square'
+}
+
+// Legacy types (for backward compatibility with existing telemetry API/submodules)
+export type Status = 'green' | 'amber' | 'red'
 export type MetricKey = 'hr' | 'hrv_rmssd' | 'spo2' | 'temp' | 'resp_rate' | 'bp_sys'
 
 export interface Vital {

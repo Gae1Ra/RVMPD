@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VITALIS • Sistema de Monitoreo de Salud Espacial</title>
+
+  <!-- Tipografías: Archivo (Texto y Títulos) + IBM Plex Mono (Cifras Tabulares) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Archivo', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['IBM Plex Mono', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* ==========================================================================
+       1. TOKENS VISUALES VITALIS v2 (OSCURO #101216 POR DEFECTO / CLARO #EEF1F5)
+       ========================================================================== */
+    :root {
+      --bg: #101216;
+      --text: #F2F4F7;
+      --text2: #B4BCC8;
+      --surface: rgba(255, 255, 255, 0.04);
+      --surface-hover: rgba(255, 255, 255, 0.07);
+      --glass: rgba(24, 27, 34, 0.72);
+      --line: rgba(255, 255, 255, 0.10);
+      --hi: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      --pill-bg: rgba(255, 255, 255, 0.06);
+      --pill-active: rgba(255, 255, 255, 0.14);
+
+      /* Paleta Semántica Oscura */
+      --green: #7DB843;
+      --green-bg: rgba(125, 184, 67, 0.14);
+      --blue: #5B9FEE;
+      --blue-bg: rgba(91, 159, 238, 0.14);
+      --amber: #E6AD52;
+      --amber-bg: rgba(230, 173, 82, 0.15);
+      --red: #E05252;
+      --red-bg: rgba(224, 82, 82, 0.16);
+      --accent: #438FE8;
+    }
+
+    .theme-light {
+      --bg: #EEF1F5;
+      --text: #101216;
+      --text2: #485160;
+      --surface: rgba(255, 255, 255, 0.72);
+      --surface-hover: rgba(255, 255, 255, 0.92);
+      --glass: rgba(255, 255, 255, 0.82);
+      --line: rgba(16, 18, 22, 0.10);
+      --hi: inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
+      --shadow: 0 8px 24px rgba(16, 18, 22, 0.06);
+      --pill-bg: rgba(16, 18, 22, 0.06);
+      --pill-active: #FFFFFF;
+
+      /* Paleta Semántica Clara (mayor contraste) */
+      --green: #47761B;
+      --green-bg: rgba(71, 118, 27, 0.12);
+      --blue: #2567BD;
+      --blue-bg: rgba(37, 103, 189, 0.12);
+      --amber: #875A08;
+      --amber-bg: rgba(135, 90, 8, 0.12);
+      --red: #B83232;
+      --red-bg: rgba(184, 50, 50, 0.12);
+      --accent: #2567BD;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Archivo', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 16px;
+      line-height: 1.45;
+      min-height: 100vh;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    /* Cifras tabulares estrictas en toda la interfaz */
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1, "zero" 1;
+    }
+
+    /* Superficies Glassmorphism sobrio (radio 16px, borde 1px, sin neón) */
+    .vitalis-glass {
+      background: var(--glass);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--line);
+      box-shadow: var(--hi), var(--shadow);
+      border-radius: 16px;
+    }
+
+    .vitalis-surface {
+      background: var(--surface);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--line);
+      box-shadow: var(--hi);
+      border-radius: 16px;
+      transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+    }
+
+    .vitalis-surface:hover {
+      background: var(--surface-hover);
+    }
+
+    .vitalis-card-selected {
+      border-color: var(--accent) !important;
+      box-shadow: var(--hi), 0 0 0 1px var(--accent);
+    }
+
+    /* Accesibilidad: Foco visible 2px en --accent */
+    button:focus-visible,
+    input:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Respeto estricto a prefers-reduced-motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    /* Respaldo para navegadores sin backdrop-filter */
+    @supports not (backdrop-filter: blur(24px)) {
+      .vitalis-glass, .vitalis-surface {
+        background: var(--bg);
+      }
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-[#438FE8]/30">
+
+  <!-- CONTENEDOR PRINCIPAL ÚNICO (SIN BARRA LATERAL, MÁX. 1280 PX) -->
+  <div class="max-w-[1280px] mx-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-4 min-h-screen">
+
+    <!-- ======================================================================
+         1. BARRA SUPERIOR MINIMALISTA
+         Izquierda: Logo + VITALIS · A-01 · DÍA 42
+         Centro: Selector de rol Médico | Astronauta
+         Derecha: Simulado · T+ 42d 14:22:08 + Simular evento + Tema
+         ====================================================================== -->
+    <header class="vitalis-glass px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- Izquierda: Identidad VITALIS -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center border shrink-0"
+          style="border-color: var(--line); background: var(--pill-bg);" aria-hidden="true">
+          <!-- Logotipo circular minimalista VITALIS -->
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="9.5" opacity="0.45" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12h3.2l1.8-4.2 3 8.4 2-4.2h5" />
+          </svg>
+        </div>
+        <div class="flex items-center gap-2 text-[15px] sm:text-[16px] font-semibold tracking-tight">
+          <span>VITALIS</span>
+          <span style="color: var(--text2);">·</span>
+          <span class="font-mono text-[14px] sm:text-[15px]" style="color: var(--text2);">A-01 · DÍA 42</span>
+        </div>
+      </div>
+
+      <!-- Centro: Conmutador de Rol (Médico | Astronauta) -->
+      <div role="tablist" aria-label="Selector de rol"
+        class="p-1 rounded-[12px] flex items-center gap-1 border"
+        style="background: var(--pill-bg); border-color: var(--line);">
+        <button id="role-btn-medico" role="tab" aria-selected="true" onclick="setRole('medico')"
+          class="px-4 py-1.5 rounded-[10px] text-[14px] font-semibold transition cursor-pointer">
+          Médico
+        </button>
+        <button id="role-btn-astronauta" role="tab" aria-selected="false" onclick="setRole('astronauta')"
+          class="px-4 py-1.5 rounded-[10px] text-[14px] font-semibold transition cursor-pointer">
+          Astronauta
+        </button>
+      </div>
+
+      <!-- Derecha: Estado de simulación, Reloj MET, Simular Evento y Tema -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div class="font-mono tabular-nums text-[14px] flex items-center gap-1.5" style="color: var(--text2);">
+          <span>Simulado</span>
+          <span>·</span>
+          <span id="mission-clock" class="font-medium" style="color: var(--text);">T+ 42d 14:22:08</span>
+        </div>
+
+        <!-- Botón Simular Evento (Cicla: Nominal -> Evento Crítico -> Recuperación) -->
+        <button id="btn-sim-event" onclick="cycleSimulationEvent()"
+          class="px-3.5 py-2 rounded-[11px] text-[14px] font-medium border transition cursor-pointer"
+          style="background: var(--pill-bg); border-color: var(--line); color: var(--text);">
+          Simular evento
+        </button>
+
+        <!-- Botón Manual de Tema Claro / Oscuro -->
+        <button id="btn-theme-toggle" onclick="toggleTheme()" aria-label="Cambiar tema claro u oscuro"
+          title="Alternar tema oscuro / claro"
+          class="w-10 h-10 rounded-[11px] border flex items-center justify-center transition cursor-pointer"
+          style="background: var(--pill-bg); border-color: var(--line); color: var(--text);">
+          <!-- Icono Sol (visible en oscuro) -->
+          <svg id="icon-sun" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="4" />
+            <path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41" />
+          </svg>
+          <!-- Icono Luna (visible en claro) -->
+          <svg id="icon-moon" class="w-4 h-4 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ======================================================================
+         2. FRANJA DE ESTADO UNIFICADA
+         Izquierda: Forma + Color + Título Global + Preparación [0-100] + Antigüedad
+         Derecha: Exportar CSV + Avisar equipo
+         ====================================================================== -->
+    <section aria-live="polite" class="vitalis-glass px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-2.5 sm:gap-3">
+        <!-- Indicador Semántico Global (Forma + Color) -->
+        <span id="global-shape-container" class="inline-flex items-center justify-center w-5 h-5" aria-hidden="true"></span>
+
+        <div class="flex flex-wrap items-baseline gap-2 text-[15px] sm:text-[16px]">
+          <span id="global-status-title" class="font-semibold">Todo en orden</span>
+          <span style="color: var(--text2);">·</span>
+          <span class="font-mono tabular-nums text-[14px] sm:text-[15px]" style="color: var(--text2);">
+            Preparación <strong id="readiness-score" style="color: var(--text);">86</strong>
+          </span>
+          <span style="color: var(--text2);">·</span>
+          <span id="data-freshness" class="font-mono tabular-nums text-[14px]" style="color: var(--text2);">hace 1 s</span>
+        </div>
+      </div>
+
+      <!-- Acciones Rápidas -->
+      <div class="flex items-center gap-2.5">
+        <button id="btn-export-csv" onclick="exportCSV()"
+          class="px-3.5 py-2 rounded-[11px] text-[14px] font-medium border transition cursor-pointer"
+          style="background: var(--pill-bg); border-color: var(--line); color: var(--text);">
+          Exportar CSV
+        </button>
+
+        <button id="btn-notify-team" onclick="openNotifyModal()"
+          class="px-4 py-2 rounded-[11px] text-[14px] font-semibold border transition cursor-pointer"
+          style="background: var(--pill-bg); border-color: var(--line); color: var(--text);">
+          Avisar equipo
+        </button>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         3. PANEL DE EMERGENCIA (SOLO VISIBLE CON EVENTO ACTIVO / CRÍTICO)
+         Médico: Tabla Previo vs Actual + Acción recomendada + Registro intervención
+         Astronauta: Banner simplificado de pausa y aviso inmediato
+         ====================================================================== -->
+    <section id="emergency-panel" class="hidden vitalis-glass p-4 border-l-4" style="border-left-color: var(--red);" aria-live="assertive">
+      <!-- Vista Médico de Emergencia -->
+      <div id="emergency-medico-view" class="space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-3 h-3 rounded-[2px]" style="background: var(--red);" aria-hidden="true"></span>
+            <h2 class="text-[16px] font-bold uppercase tracking-wider" style="color: var(--red);">
+              Evento Fisiológico Activo · Comparativa Previo vs. Ahora
+            </h2>
+          </div>
+          <span id="emergency-phase-badge" class="font-mono text-[14px] px-2.5 py-0.5 rounded-lg"
+            style="background: var(--red-bg); color: var(--red);">
+            Fase: Elevación aguda
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <!-- Tabla Antes del evento vs. Ahora -->
+          <div class="lg:col-span-7 overflow-x-auto rounded-xl border" style="border-color: var(--line);">
+            <table class="w-full text-left border-collapse text-[14px]">
+              <thead>
+                <tr class="border-b" style="border-color: var(--line); background: var(--pill-bg); color: var(--text2);">
+                  <th class="py-2 px-3 font-medium">Parámetro</th>
+                  <th class="py-2 px-3 font-medium font-mono">Previo</th>
+                  <th class="py-2 px-3 font-medium font-mono">Actual</th>
+                  <th class="py-2 px-3 font-medium font-mono">Cambio</th>
+                </tr>
+              </thead>
+              <tbody id="emergency-comparison-body" class="font-mono tabular-nums divide-y" style="border-color: var(--line);">
+                <!-- Generado dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Acción Recomendada + Registro de Intervenciones -->
+          <div class="lg:col-span-5 flex flex-col justify-between gap-3 p-3.5 rounded-xl border" style="border-color: var(--line); background: var(--pill-bg);">
+            <div>
+              <div class="text-[14px] font-semibold uppercase tracking-wider mb-1" style="color: var(--text2);">
+                Acción recomendada (Protocolo A bordo)
+              </div>
+              <p id="emergency-protocol-text" class="text-[14px]">
+                Suspender actividad física, verificar hidratación y repetir medición de signos en 5 minutos.
+              </p>
+            </div>
+
+            <!-- Registro de Intervención con Hora de Misión -->
+            <div class="pt-2 border-t" style="border-color: var(--line);">
+              <label for="intervention-input" class="block text-[14px] font-medium mb-1.5" style="color: var(--text2);">
+                Registrar intervención médica
+              </label>
+              <div class="flex gap-2">
+                <input id="intervention-input" type="text" placeholder="Ej. Reposo sentado + 300 ml agua"
+                  class="flex-1 px-3 py-2 rounded-[10px] text-[14px] border bg-transparent"
+                  style="border-color: var(--line); color: var(--text);"
+                  onkeydown="if(event.key==='Enter') logIntervention()" />
+                <button onclick="logIntervention()"
+                  class="px-3.5 py-2 rounded-[10px] text-[14px] font-semibold text-white cursor-pointer shrink-0"
+                  style="background: var(--accent);">
+                  Registrar
+                </button>
+              </div>
+              <ul id="intervention-log-list" class="mt-2 space-y-1 text-[14px] font-mono tabular-nums max-h-20 overflow-y-auto" style="color: var(--text2);">
+                <!-- Entradas registradas -->
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista Astronauta Simplificada de Emergencia -->
+      <div id="emergency-astronauta-view" class="hidden flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <span class="inline-block w-3.5 h-3.5 rounded-[2px] shrink-0" style="background: var(--red);" aria-hidden="true"></span>
+          <div>
+            <div class="text-[16px] font-bold">Haz una pausa y descansa ahora</div>
+            <p class="text-[14px]" style="color: var(--text2);">
+              Tus pulsaciones y respiración subieron fuera de tu rango habitual. Siéntate, respira despacio y avisa al equipo médico.
+            </p>
+          </div>
+        </div>
+        <button onclick="openNotifyModal()"
+          class="px-4 py-2.5 rounded-[11px] text-[14px] font-semibold text-white cursor-pointer"
+          style="background: var(--red);">
+          Avisar ahora
+        </button>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         4. MATRIZ 3x2 DE 6 SIGNOS VITALES (SIN MICROGRÁFICAS INTERNAS)
+         Al hacer clic en cualquier tarjeta se selecciona en Evolución.
+         ====================================================================== -->
+    <section aria-label="Signos vitales monitoreados" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5" id="vitals-grid">
+      <!-- Renderizado dinámico de las 6 tarjetas -->
+    </section>
+
+    <!-- ======================================================================
+         5. SECCIÓN INFERIOR EQUILIBRADA DE 2 COLUMNAS
+         Izquierda: Evolución · [Indicador] (Vivo | 24h | 7d) + Gráfica interactiva
+         Derecha: IA Local · Apoyo a la decisión (Médico vs Astronauta)
+         ====================================================================== -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 flex-1">
+
+      <!-- Columna Izquierda (7 cols): Evolución Temporal -->
+      <div class="lg:col-span-7 vitalis-surface p-4 flex flex-col justify-between gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-[16px] font-semibold">
+              Evolución · <span id="chart-indicator-title" style="color: var(--accent);">FC</span>
+            </h2>
+            <div class="flex items-center gap-2 text-[14px] mt-0.5" style="color: var(--text2);">
+              <span class="inline-block w-2.5 h-2.5 rounded-full" style="background: var(--green);" aria-hidden="true"></span>
+              <span id="chart-range-caption">Rango individual (60 – 80 lpm)</span>
+            </div>
+          </div>
+
+          <!-- Selector de Periodo: Vivo | 24h | 7d -->
+          <div role="tablist" aria-label="Rango temporal de evolución"
+            class="p-1 rounded-[11px] flex items-center gap-1 border"
+            style="background: var(--pill-bg); border-color: var(--line);">
+            <button id="range-btn-vivo" role="tab" aria-selected="true" onclick="setTimeRange('vivo')"
+              class="px-3 py-1 rounded-[9px] text-[14px] font-medium transition cursor-pointer">
+              Vivo
+            </button>
+            <button id="range-btn-24h" role="tab" aria-selected="false" onclick="setTimeRange('24h')"
+              class="px-3 py-1 rounded-[9px] text-[14px] font-medium transition cursor-pointer">
+              24h
+            </button>
+            <button id="range-btn-7d" role="tab" aria-selected="false" onclick="setTimeRange('7d')"
+              class="px-3 py-1 rounded-[9px] text-[14px] font-medium transition cursor-pointer">
+              7d
+            </button>
+          </div>
+        </div>
+
+        <!-- Lienzo Interactivo SVG (Navegable por ratón y flechas ← →) -->
+        <div class="relative w-full h-[205px] select-none">
+          <svg id="evolution-svg" tabindex="0" role="img"
+            aria-label="Gráfica de evolución temporal. Usa las flechas izquierda y derecha para explorar los valores."
+            class="w-full h-full rounded-xl overflow-visible cursor-crosshair">
+          </svg>
+
+          <!-- Tooltip flotante de inspección -->
+          <div id="chart-tooltip"
+            class="hidden pointer-events-none absolute top-2 right-2 px-3 py-1.5 rounded-[10px] border text-[14px] font-mono tabular-nums"
+            style="background: var(--glass); border-color: var(--line); color: var(--text);">
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 text-[14px]" style="color: var(--text2);">
+          <span id="chart-plain-summary">Dentro de tu rango individual el 100 % del periodo.</span>
+          <span class="font-mono text-[14px]">Teclado: ← → para explorar</span>
+        </div>
+      </div>
+
+      <!-- Columna Derecha (5 cols): IA Local · Apoyo a la decisión -->
+      <div class="lg:col-span-5 vitalis-surface p-4 flex flex-col justify-between gap-3">
+        <div>
+          <div class="flex items-center justify-between gap-2 mb-2.5">
+            <h2 class="text-[16px] font-semibold">IA Local · Apoyo a la decisión</h2>
+            <span class="font-mono text-[14px] px-2.5 py-0.5 rounded-lg border"
+              style="background: var(--pill-bg); border-color: var(--line); color: var(--text2);">
+              A bordo
+            </span>
+          </div>
+
+          <!-- Contenido IA para Rol Médico -->
+          <div id="ai-medico-content" class="space-y-2.5 text-[15px]">
+            <p id="ai-observation" class="leading-relaxed">
+              <strong>Observación:</strong> Los 6 signos vitales permanecen dentro del rango individual de A-01 sin desviaciones sostenidas.
+            </p>
+            <p id="ai-hypothesis" class="leading-relaxed" style="color: var(--text2);">
+              <strong>Hipótesis:</strong> Estado basal estable compatible con reposo en cabina; sin indicios de sobrecarga fisiológica.
+            </p>
+          </div>
+
+          <!-- Contenido IA para Rol Astronauta -->
+          <div id="ai-astronauta-content" class="hidden space-y-3 text-[15px]">
+            <p id="ai-astro-guidance" class="leading-relaxed">
+              Tu cuerpo responde con normalidad y todos tus valores están en tu rango habitual. Mantén tu ritmo de hidratación durante la jornada.
+            </p>
+
+            <!-- Píldora de Siguiente Acción / Misión Diaria -->
+            <div class="p-3 rounded-xl border flex items-center justify-between gap-2"
+              style="background: var(--pill-bg); border-color: var(--line);">
+              <div>
+                <div class="text-[14px] font-medium" style="color: var(--text2);">Siguiente acción</div>
+                <div id="next-mission-label" class="text-[15px] font-semibold">Beber un vaso de agua · +10 XP</div>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button id="btn-complete-mission" onclick="completeNextMission()"
+                  class="px-3 py-1.5 rounded-[10px] text-[14px] font-semibold text-white cursor-pointer"
+                  style="background: var(--accent);">
+                  Hecho
+                </button>
+                <button onclick="openMissionsModal()"
+                  class="px-2.5 py-1.5 rounded-[10px] text-[14px] font-medium border cursor-pointer"
+                  style="border-color: var(--line); color: var(--text);">
+                  Ver 5
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de Consulta Rápida (Rol Médico) -->
+        <div id="ai-medico-pills" class="flex flex-wrap gap-2 pt-2 border-t" style="border-color: var(--line);">
+          <button onclick="setAiQuery('resumen24h')"
+            class="px-3 py-1.5 rounded-[10px] text-[14px] font-medium border transition cursor-pointer"
+            style="background: var(--pill-bg); border-color: var(--line); color: var(--text);">
+            Resumen 24h
+          </button>
+          <button onclick="setAiQuery('tendencia')"
+            class="px-3 py-1.5 rounded-[10px] text-[14px] font-medium border transition cursor-pointer"
+            style="background: var(--pill-bg); border-color: var(--line); color: var(--text);">
+            Evaluar tendencia
+          </button>
+          <button onclick="setAiQuery('protocolo')"
+            class="px-3 py-1.5 rounded-[10px] text-[14px] font-medium border transition cursor-pointer"
+            style="background: var(--pill-bg); border-color: var(--line); color: var(--text);">
+            Protocolo activo
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ======================================================================
+         6. PIE DE PÁGINA PERMANENTE DE TRANSPARENCIA
+         ====================================================================== -->
+    <footer class="pt-1 pb-2 text-center text-[14px]" style="color: var(--text2);">
+      Todos los valores son simulados · Herramienta de apoyo a bordo, no sustituye al personal médico.
+    </footer>
+
+  </div>
+
+  <!-- ========================================================================
+       MODAL 1: AVISAR AL EQUIPO MÉDICO / CONFIRMACIÓN
+       ======================================================================== -->
+  <div id="notify-modal" role="dialog" aria-modal="true" aria-labelledby="notify-modal-title"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+    <div class="vitalis-glass w-full max-w-md p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 id="notify-modal-title" class="text-[17px] font-bold">Aviso al Equipo Médico</h3>
+        <button onclick="closeAllModals()" aria-label="Cerrar ventana"
+          class="w-9 h-9 rounded-lg border flex items-center justify-center cursor-pointer"
+          style="border-color: var(--line); color: var(--text);">✕</button>
+      </div>
+      <p id="notify-modal-desc" class="text-[15px]" style="color: var(--text2);">
+        Se enviará la instantánea actual de los 6 signos vitales y el registro de eventos al médico de vuelo mediante el enlace local a bordo.
+      </p>
+      <div class="p-3 rounded-xl border font-mono text-[14px] tabular-nums"
+        style="background: var(--pill-bg); border-color: var(--line);">
+        Perfil: A-01 · Día 42 · Preparación: <span id="modal-readiness-val">86</span>/100
+      </div>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeAllModals()"
+          class="px-4 py-2 rounded-[10px] text-[14px] font-medium border cursor-pointer"
+          style="border-color: var(--line); color: var(--text);">
+          Cancelar
+        </button>
+        <button onclick="confirmNotifyTeam()"
+          class="px-4 py-2 rounded-[10px] text-[14px] font-semibold text-white cursor-pointer"
+          style="background: var(--accent);">
+          Confirmar envío
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 2: RUTINAS DIARIAS DEL ASTRONAUTA (5 MISIONES + REGLA DE SEGURIDAD)
+       ======================================================================== -->
+  <div id="missions-modal" role="dialog" aria-modal="true" aria-labelledby="missions-modal-title"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+    <div class="vitalis-glass w-full max-w-lg p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 id="missions-modal-title" class="text-[17px] font-bold">Rutinas diarias · A-01</h3>
+          <p class="text-[14px]" style="color: var(--text2);">Posponer una rutina nunca resta progreso.</p>
+        </div>
+        <button onclick="closeAllModals()" aria-label="Cerrar ventana"
+          class="w-9 h-9 rounded-lg border flex items-center justify-center cursor-pointer"
+          style="border-color: var(--line); color: var(--text);">✕</button>
+      </div>
+
+      <div id="missions-safety-banner" class="hidden p-3 rounded-xl border text-[14px]"
+        style="background: var(--amber-bg); border-color: var(--amber); color: var(--text);">
+        <strong>Seguridad activa:</strong> El ejercicio de resistencia está pausado hasta que tus signos vuelvan a tu rango habitual.
+      </div>
+
+      <div id="missions-checklist" class="space-y-2">
+        <!-- Lista generada por JS -->
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t text-[14px] font-mono" style="border-color: var(--line);">
+        <span id="xp-summary">Nivel: Cadete · 30 / 200 XP</span>
+        <button onclick="closeAllModals()"
+          class="px-4 py-2 rounded-[10px] font-sans font-semibold text-white cursor-pointer"
+          style="background: var(--accent);">
+          Listo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 3: GUÍA EDUCATIVA DE INDICADOR (? EN MODO ASTRONAUTA)
+       ======================================================================== -->
+  <div id="info-modal" role="dialog" aria-modal="true" aria-labelledby="info-modal-title"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+    <div class="vitalis-glass w-full max-w-md p-5 space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 id="info-modal-title" class="text-[17px] font-bold">Guía del indicador</h3>
+        <button onclick="closeAllModals()" aria-label="Cerrar ventana"
+          class="w-9 h-9 rounded-lg border flex items-center justify-center cursor-pointer"
+          style="border-color: var(--line); color: var(--text);">✕</button>
+      </div>
+      <div id="info-modal-body" class="space-y-2.5 text-[15px]">
+        <!-- Contenido dinámico -->
+      </div>
+      <div class="pt-2 flex justify-end">
+        <button onclick="closeAllModals()"
+          class="px-4 py-2 rounded-[10px] text-[14px] font-semibold text-white cursor-pointer"
+          style="background: var(--accent);">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST DE CONFIRMACIÓN SILENCIOSA -->
+  <div id="toast-banner" role="status" aria-live="polite"
+    class="hidden fixed bottom-5 right-5 z-50 vitalis-glass px-4 py-3 text-[14px] font-medium border-l-4"
+    style="border-left-color: var(--accent);">
+  </div>
+
+  <!-- ========================================================================
+       MOTOR DE TELEMETRÍA SIMULADA, UMBRALES E IA LOCAL (100% AUTÓNOMO)
+       ======================================================================== -->
+  <script>
+    // ========================================================================
+    // 1. DEFINICIÓN DE LOS 6 INDICADORES Y SUS RANGOS INDIVIDUALES (A-01)
+    // ========================================================================
+    const INDICATORS = [
+      {
+        id: 'fc',
+        abbr: 'FC',
+        astroName: 'Frecuencia cardíaca',
+        clinicalName: 'Frecuencia Cardíaca',
+        unit: 'lpm',
+        decimals: 0,
+        base: 72,
+        current: 72,
+        prevEvent: 72,
+        ref: [60, 80],
+        warn: [50, 100],
+        crit: [40, 120],
+        rangeText: '60–80',
+        chartMin: 40,
+        chartMax: 140,
+        plainDesc: 'Latidos por minuto en reposo dentro de tu margen habitual.',
+        whatMeasures: 'Mide cuántas veces late tu corazón cada minuto.',
+        whenNotify: 'Avisa si supera 100 lpm en reposo o sientes palpitaciones o mareo.'
+      },
+      {
+        id: 'spo2',
+        abbr: 'SpO₂',
+        astroName: 'Oxígeno en sangre',
+        clinicalName: 'Saturación de Oxígeno',
+        unit: '%',
+        decimals: 0,
+        base: 98,
+        current: 98,
+        prevEvent: 98,
+        ref: [95, 100],
+        warn: [92, 100],
+        crit: [88, 100],
+        rangeText: '95–100',
+        chartMin: 85,
+        chartMax: 100,
+        plainDesc: 'Transporte de oxígeno estable en sangre.',
+        whatMeasures: 'Indica el porcentaje de oxígeno que transportan tus glóbulos rojos.',
+        whenNotify: 'Avisa de inmediato si baja de 92 % o notas falta de aire.'
+      },
+      {
+        id: 'pa',
+        abbr: 'PA',
+        astroName: 'Presión arterial',
+        clinicalName: 'Presión Arterial',
+        unit: 'mmHg',
+        decimals: 0,
+        base: 118,
+        current: 118,
+        diastolic: 78,
+        prevEvent: 118,
+        prevDiastolic: 78,
+        ref: [110, 125],
+        warn: [100, 138],
+        crit: [90, 155],
+        rangeText: '110–125',
+        chartMin: 85,
+        chartMax: 165,
+        plainDesc: 'Tensión sistólica y diastólica equilibradas.',
+        whatMeasures: 'Mide la fuerza con la que circula la sangre por tus arterias.',
+        whenNotify: 'Avisa si sube por encima de 138 mmHg o baja de 100 mmHg con debilidad.'
+      },
+      {
+        id: 'fr',
+        abbr: 'FR',
+        astroName: 'Respiración',
+        clinicalName: 'Frecuencia Respiratoria',
+        unit: 'rpm',
+        decimals: 0,
+        base: 15,
+        current: 15,
+        prevEvent: 15,
+        ref: [12, 18],
+        warn: [10, 22],
+        crit: [8, 28],
+        rangeText: '12–18',
+        chartMin: 6,
+        chartMax: 32,
+        plainDesc: 'Ritmo respiratorio pausado y regular.',
+        whatMeasures: 'Cuenta cuántas respiraciones completas realizas por minuto.',
+        whenNotify: 'Avisa si supera 22 rpm sin haber hecho esfuerzo físico.'
+      },
+      {
+        id: 'temp',
+        abbr: 'Temp.',
+        astroName: 'Temperatura',
+        clinicalName: 'Temperatura Corporal',
+        unit: '°C',
+        decimals: 1,
+        base: 36.8,
+        current: 36.8,
+        prevEvent: 36.8,
+        ref: [36.2, 37.2],
+        warn: [35.8, 37.8],
+        crit: [35.0, 38.5],
+        rangeText: '36,2–37,2',
+        chartMin: 34.8,
+        chartMax: 39.0,
+        plainDesc: 'Termorregulación basal estable en cabina.',
+        whatMeasures: 'Mide la temperatura interna de tu cuerpo en grados Celsius.',
+        whenNotify: 'Avisa si alcanza 37,8 °C o más, o si sientes escalofríos.'
+      },
+      {
+        id: 'hrv',
+        abbr: 'HRV',
+        astroName: 'Variabilidad',
+        clinicalName: 'Variabilidad Cardíaca',
+        unit: 'ms',
+        decimals: 0,
+        base: 54,
+        current: 54,
+        prevEvent: 54,
+        ref: [40, 70],
+        warn: [28, 85],
+        crit: [18, 100],
+        rangeText: '40–70',
+        chartMin: 10,
+        chartMax: 100,
+        plainDesc: 'Buena reserva de recuperación y descanso.',
+        whatMeasures: 'Mide la variación en milisegundos entre cada latido; refleja recuperación.',
+        whenNotify: 'Avisa si cae por debajo de 28 ms junto con cansancio intenso.'
+      }
+    ];
+
+    // ========================================================================
+    // 2. ESTADO DE LA APLICACIÓN
+    // ========================================================================
+    const appState = {
+      theme: 'dark',            // 'dark' | 'light'
+      role: 'medico',           // 'medico' | 'astronauta'
+      selectedId: 'fc',         // Indicador seleccionado en Evolución
+      timeRange: 'vivo',        // 'vivo' | '24h' | '7d'
+      simPhase: 'off',          // 'off' | 'rising' | 'recovering'
+      simTick: 0,
+      missionSeconds: 42 * 86400 + 14 * 3600 + 22 * 60 + 8,
+      secondsSinceUpdate: 1,
+      aiQuery: 'default',       // 'default' | 'resumen24h' | 'tendencia' | 'protocolo'
+      scrubIndex: null,
+      interventions: [],
+      xp: 30,
+      missions: [
+        { id: 'water', title: 'Beber un vaso de agua', xp: 10, done: false, isExercise: false },
+        { id: 'breath', title: 'Respiración guiada (4 ciclos)', xp: 20, done: false, isExercise: false },
+        { id: 'react', title: 'Prueba de reacción (3 intentos)', xp: 25, done: false, isExercise: false },
+        { id: 'exercise', title: 'Ejercicio de resistencia', xp: 40, done: false, isExercise: true },
+        { id: 'rest', title: 'Rutina de descanso', xp: 20, done: false, isExercise: false }
+      ],
+      series: {} // { fc: { vivo: [], '24h': [], '7d': [] }, ... }
+    };
+
+    // Formateo numérico español con coma decimal
+    function formatEs(val, decimals = 0) {
+      return Number(val).toFixed(decimals).replace('.', ',');
+    }
+
+    function formatMissionClock(totalSec) {
+      const d = Math.floor(totalSec / 86400);
+      const h = String(Math.floor((totalSec % 86400) / 3600)).padStart(2, '0');
+      const m = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+      const s = String(totalSec % 60).padStart(2, '0');
+      return `T+ ${d}d ${h}:${m}:${s}`;
+    }
+
+    // ========================================================================
+    // 3. CLASIFICACIÓN DE NIVELES (0: Normal, 1: Observación, 2: Advertencia, 3: Crítico)
+    // ========================================================================
+    function getIndicatorLevel(ind) {
+      const v = ind.current;
+      if (v < ind.crit[0] || v > ind.crit[1]) return 3; // Crítico
+      if (v < ind.warn[0] || v > ind.warn[1]) return 2; // Advertencia
+      if (v < ind.ref[0]  || v > ind.ref[1])  return 1; // Observación
+      return 0; // Normal
+    }
+
+    function getLevelMeta(level) {
+      switch (level) {
+        case 3:
+          return {
+            label: 'Crítico',
+            globalTitle: 'Avisa ahora',
+            colorVar: 'var(--red)',
+            bgVar: 'var(--red-bg)',
+            shapeSVG: `<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="var(--red)"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/></svg>`
+          };
+        case 2:
+          return {
+            label: 'Advertencia',
+            globalTitle: 'Haz una pausa',
+            colorVar: 'var(--amber)',
+            bgVar: 'var(--amber-bg)',
+            shapeSVG: `<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="var(--amber)"><polygon points="8,2 14.5,13.5 1.5,13.5"/></svg>`
+          };
+        case 1:
+          return {
+            label: 'Observación',
+            globalTitle: 'En observación',
+            colorVar: 'var(--blue)',
+            bgVar: 'var(--blue-bg)',
+            shapeSVG: `<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="var(--blue)"><polygon points="8,1.5 14.5,8 8,14.5 1.5,8"/></svg>`
+          };
+        default:
+          return {
+            label: 'Normal',
+            globalTitle: 'Todo en orden',
+            colorVar: 'var(--green)',
+            bgVar: 'var(--green-bg)',
+            shapeSVG: `<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="var(--green)"><circle cx="8" cy="8" r="5.5"/></svg>`
+          };
+      }
+    }
+
+    // ========================================================================
+    // 4. INICIALIZACIÓN DE SERIES TEMPORALES (VIVO, 24H, 7D)
+    // ========================================================================
+    function initSeries() {
+      INDICATORS.forEach(ind => {
+        const span = (ind.ref[1] - ind.ref[0]) * 0.35;
+        const makePoints = (count, includeEventMarker) => {
+          const arr = [];
+          for (let i = 0; i < count; i++) {
+            const wave = Math.sin(i * 0.38) * span * 0.65 + (Math.random() - 0.5) * span * 0.5;
+            const val = Number((ind.base + wave).toFixed(ind.decimals));
+            arr.push({
+              val,
+              label: '',
+              isEvent: includeEventMarker && i === Math.floor(count * 0.65)
+            });
+          }
+          return arr;
+        };
+
+        const vivo = makePoints(45, false);
+        vivo.forEach((pt, idx) => {
+          const secAgo = (44 - idx);
+          pt.label = secAgo === 0 ? 'Ahora' : `-${secAgo} s`;
+        });
+
+        const h24 = makePoints(25, true);
+        h24.forEach((pt, idx) => {
+          const hr = (idx) % 24;
+          pt.label = `${String(hr).padStart(2, '0')}:00`;
+        });
+
+        const d7 = makePoints(14, false);
+        const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+        d7.forEach((pt, idx) => {
+          pt.label = `${days[Math.floor(idx / 2) % 7]} ${idx % 2 === 0 ? 'AM' : 'PM'}`;
+        });
+
+        appState.series[ind.id] = { vivo, '24h': h24, '7d': d7 };
+      });
+    }
+
+    // ========================================================================
+    // 5. MOTOR DE SIMULACIÓN EN VIVO (CADA 1 SEGUNDO)
+    // ========================================================================
+    function stepTelemetry() {
+      appState.missionSeconds += 1;
+      appState.secondsSinceUpdate = 1;
+      document.getElementById('mission-clock').textContent = formatMissionClock(appState.missionSeconds);
+      document.getElementById('data-freshness').textContent = `hace ${appState.secondsSinceUpdate} s`;
+
+      if (appState.simPhase === 'rising') {
+        appState.simTick += 1;
+        // Progresión hacia evento fisiológico agudo
+        const factor = Math.min(1, appState.simTick / 8);
+        setSimTargets(factor);
+        if (appState.simTick >= 18) {
+          appState.simPhase = 'recovering';
+          appState.simTick = 0;
+          updateSimButton();
+        }
+      } else if (appState.simPhase === 'recovering') {
+        appState.simTick += 1;
+        const factor = Math.max(0, 1 - appState.simTick / 10);
+        setSimTargets(factor);
+        if (factor <= 0.02) {
+          appState.simPhase = 'off';
+          appState.simTick = 0;
+          resetToNominal();
+          updateSimButton();
+        }
+      } else {
+        // Variación fisiológica suave en reposo
+        INDICATORS.forEach(ind => {
+          const jitter = (Math.random() - 0.5) * (ind.decimals === 1 ? 0.14 : 1.4);
+          const next = ind.base + jitter;
+          ind.current = Number(Math.max(ind.ref[0], Math.min(ind.ref[1], next)).toFixed(ind.decimals));
+          if (ind.id === 'pa') {
+            ind.diastolic = Math.round(78 + (Math.random() - 0.5) * 2);
+          }
+        });
+      }
+
+      // Agregar punto a la serie 'vivo' de cada indicador
+      const nowLabel = formatMissionClock(appState.missionSeconds).slice(-8);
+      INDICATORS.forEach(ind => {
+        const s = appState.series[ind.id].vivo;
+        s.push({
+          val: ind.current,
+          label: nowLabel,
+          isEvent: appState.simPhase === 'rising' && appState.simTick === 1
+        });
+        if (s.length > 60) s.shift();
+      });
+
+      renderAll();
+    }
+
+    function setSimTargets(f) {
+      // f = 0 (nominal) -> f = 1 (evento crítico)
+      const byId = id => INDICATORS.find(i => i.id === id);
+      byId('fc').current   = Math.round(72 + f * 54);          // -> 126 lpm (Crítico)
+      byId('spo2').current = Math.round(98 - f * 7);           // -> 91 % (Advertencia)
+      byId('pa').current   = Math.round(118 + f * 26);         // -> 144 mmHg (Advertencia)
+      byId('pa').diastolic = Math.round(78 + f * 14);          // -> 92 mmHg
+      byId('fr').current   = Math.round(15 + f * 10);          // -> 25 rpm (Advertencia)
+      byId('temp').current = Number((36.8 + f * 1.1).toFixed(1)); // -> 37,9 °C (Advertencia)
+      byId('hrv').current  = Math.round(54 - f * 34);          // -> 20 ms (Advertencia)
+    }
+
+    function resetToNominal() {
+      INDICATORS.forEach(ind => {
+        ind.current = ind.base;
+        if (ind.id === 'pa') ind.diastolic = 78;
+      });
+    }
+
+    function cycleSimulationEvent() {
+      if (appState.simPhase === 'off') {
+        // Guardar valores previos antes del evento
+        INDICATORS.forEach(ind => {
+          ind.prevEvent = ind.current;
+          if (ind.id === 'pa') ind.prevDiastolic = ind.diastolic;
+        });
+        appState.simPhase = 'rising';
+        appState.simTick = 1;
+        setSimTargets(0.85);
+        showToast('Evento crítico simulado activo');
+      } else if (appState.simPhase === 'rising') {
+        appState.simPhase = 'recovering';
+        appState.simTick = 1;
+        showToast('Iniciando fase de recuperación');
+      } else {
+        appState.simPhase = 'off';
+        appState.simTick = 0;
+        resetToNominal();
+        showToast('Valores restaurados a rango nominal');
+      }
+      updateSimButton();
+      renderAll();
+    }
+
+    function updateSimButton() {
+      const btn = document.getElementById('btn-sim-event');
+      if (appState.simPhase === 'rising') {
+        btn.textContent = 'Simular recuperación';
+        btn.style.borderColor = 'var(--red)';
+        btn.style.color = 'var(--red)';
+      } else if (appState.simPhase === 'recovering') {
+        btn.textContent = 'Detener simulación';
+        btn.style.borderColor = 'var(--amber)';
+        btn.style.color = 'var(--amber)';
+      } else {
+        btn.textContent = 'Simular evento';
+        btn.style.borderColor = 'var(--line)';
+        btn.style.color = 'var(--text)';
+      }
+    }
+
+    // ========================================================================
+    // 6. RENDERIZADO DE INTERFAZ UNIFICADA
+    // ========================================================================
+    function renderAll() {
+      renderGlobalStatus();
+      renderEmergencyPanel();
+      renderVitalsGrid();
+      renderEvolutionChart();
+      renderLocalAI();
+    }
+
+    function renderGlobalStatus() {
+      const levels = INDICATORS.map(getIndicatorLevel);
+      const maxLevel = Math.max(...levels);
+      const sumOfLevels = levels.reduce((acc, l) => acc + l, 0);
+      const readiness = Math.max(8, 86 - 7 * sumOfLevels);
+
+      const meta = getLevelMeta(maxLevel);
+      document.getElementById('global-shape-container').innerHTML = meta.shapeSVG;
+
+      const titleEl = document.getElementById('global-status-title');
+      titleEl.textContent = meta.globalTitle;
+      titleEl.style.color = maxLevel > 0 ? meta.colorVar : 'var(--text)';
+
+      document.getElementById('readiness-score').textContent = readiness;
+      document.getElementById('modal-readiness-val').textContent = readiness;
+
+      // Enfatizar botón 'Avisar equipo' cuando nivel >= Advertencia (2)
+      const notifyBtn = document.getElementById('btn-notify-team');
+      if (maxLevel >= 2) {
+        notifyBtn.style.background = meta.colorVar;
+        notifyBtn.style.borderColor = meta.colorVar;
+        notifyBtn.style.color = '#FFFFFF';
+      } else {
+        notifyBtn.style.background = 'var(--pill-bg)';
+        notifyBtn.style.borderColor = 'var(--line)';
+        notifyBtn.style.color = 'var(--text)';
+      }
+    }
+
+    function renderEmergencyPanel() {
+      const panel = document.getElementById('emergency-panel');
+      const maxLevel = Math.max(...INDICATORS.map(getIndicatorLevel));
+      const active = appState.simPhase !== 'off' || maxLevel >= 2;
+
+      if (!active) {
+        panel.classList.add('hidden');
+        return;
+      }
+
+      panel.classList.remove('hidden');
+      const medView = document.getElementById('emergency-medico-view');
+      const astView = document.getElementById('emergency-astronauta-view');
+
+      if (appState.role === 'medico') {
+        medView.classList.remove('hidden');
+        astView.classList.add('hidden');
+
+        document.getElementById('emergency-phase-badge').textContent =
+          appState.simPhase === 'recovering' ? 'Fase: Recuperación guiada' : 'Fase: Elevación aguda';
+
+        const tbody = document.getElementById('emergency-comparison-body');
+        tbody.innerHTML = INDICATORS.map(ind => {
+          const prevStr = ind.id === 'pa'
+            ? `${ind.prevEvent}/${ind.prevDiastolic}`
+            : formatEs(ind.prevEvent, ind.decimals);
+          const currStr = ind.id === 'pa'
+            ? `${ind.current}/${ind.diastolic}`
+            : formatEs(ind.current, ind.decimals);
+          const diff = Number((ind.current - ind.prevEvent).toFixed(ind.decimals));
+          const diffSign = diff > 0 ? `+${formatEs(diff, ind.decimals)}` : formatEs(diff, ind.decimals);
+          const lvl = getIndicatorLevel(ind);
+          const color = lvl > 0 ? getLevelMeta(lvl).colorVar : 'var(--text2)';
+
+          return `
+            <tr>
+              <td class="py-1.5 px-3 font-sans font-medium">${ind.abbr}</td>
+              <td class="py-1.5 px-3" style="color: var(--text2);">${prevStr} ${ind.unit}</td>
+              <td class="py-1.5 px-3 font-semibold">${currStr} ${ind.unit}</td>
+              <td class="py-1.5 px-3 font-semibold" style="color: ${color};">${diffSign}</td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        medView.classList.add('hidden');
+        astView.classList.remove('hidden');
+      }
+    }
+
+    function renderVitalsGrid() {
+      const grid = document.getElementById('vitals-grid');
+      const isAstro = appState.role === 'astronauta';
+
+      grid.innerHTML = INDICATORS.map(ind => {
+        const level = getIndicatorLevel(ind);
+        const meta = getLevelMeta(level);
+        const isSelected = appState.selectedId === ind.id;
+        const label = isAstro ? ind.astroName : ind.abbr;
+        const valDisplay = ind.id === 'pa'
+          ? `${ind.current}/${ind.diastolic}`
+          : formatEs(ind.current, ind.decimals);
+
+        return `
+          <article onclick="selectIndicator('${ind.id}')"
+            role="button" tabindex="0"
+            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectIndicator('${ind.id}');}"
+            aria-label="${label}: ${valDisplay} ${ind.unit}, estado ${meta.label}"
+            class="vitalis-surface p-4 cursor-pointer flex flex-col justify-between gap-2 ${isSelected ? 'vitalis-card-selected' : ''}">
+
+            <!-- Fila superior: Forma + Nombre + Estado / Botón '?' -->
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                ${meta.shapeSVG}
+                <span class="text-[15px] font-semibold">${label}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-[14px] font-medium" style="color: ${meta.colorVar};">${meta.label}</span>
+                ${isAstro ? `
+                  <button type="button" onclick="event.stopPropagation(); openIndicatorInfo('${ind.id}')"
+                    aria-label="¿Qué mide ${ind.astroName}?"
+                    class="w-7 h-7 rounded-full border text-[14px] font-mono font-semibold flex items-center justify-center cursor-pointer"
+                    style="border-color: var(--line); background: var(--pill-bg); color: var(--text);">
+                    ?
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- Fila central: Valor tabular grande + Unidad + Rango individual -->
+            <div class="flex items-baseline justify-between gap-2 my-1">
+              <div class="flex items-baseline gap-1.5">
+                <span class="font-mono tabular-nums text-[36px] sm:text-[40px] font-semibold leading-none tracking-tight">
+                  ${valDisplay}
+                </span>
+                <span class="text-[15px] font-medium" style="color: var(--text2);">${ind.unit}</span>
+              </div>
+              <span class="font-mono tabular-nums text-[14px]" style="color: var(--text2);">
+                ${ind.rangeText}
+              </span>
+            </div>
+
+            <!-- Fila inferior: Subtítulo clínico o explicación llana en modo Astronauta -->
+            <div class="text-[14px] truncate" style="color: var(--text2);">
+              ${isAstro ? ind.plainDesc : ind.clinicalName}
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    // ========================================================================
+    // 7. GRÁFICA DE EVOLUCIÓN TEMPORAL (FRANJA VERDE + HOVER + TECLADO ← →)
+    // ========================================================================
+    function renderEvolutionChart() {
+      const ind = INDICATORS.find(i => i.id === appState.selectedId) || INDICATORS[0];
+      const titleLabel = appState.role === 'astronauta' ? ind.astroName : ind.abbr;
+      document.getElementById('chart-indicator-title').textContent = titleLabel;
+      document.getElementById('chart-range-caption').textContent =
+        `Rango individual (${ind.rangeText} ${ind.unit})`;
+
+      const pts = appState.series[ind.id][appState.timeRange];
+      const svg = document.getElementById('evolution-svg');
+      const W = 640;
+      const H = 205;
+      const padL = 42;
+      const padR = 14;
+      const padT = 14;
+      const padB = 26;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+
+      const minV = ind.chartMin;
+      const maxV = ind.chartMax;
+      const toY = v => padT + plotH - ((v - minV) / (maxV - minV)) * plotH;
+      const toX = idx => padL + (idx / Math.max(1, pts.length - 1)) * plotW;
+
+      // Coordenadas de la franja verde (rango individual)
+      const refTopY = toY(ind.ref[1]);
+      const refBotY = toY(ind.ref[0]);
+      const refH = Math.max(4, refBotY - refTopY);
+
+      // Generar path de curva y área
+      const coords = pts.map((p, idx) => ({ x: toX(idx), y: toY(p.val), ...p }));
+      const lineD = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ');
+      const areaD = `${lineD} L ${coords[coords.length - 1].x.toFixed(1)} ${(padT + plotH).toFixed(1)} L ${coords[0].x.toFixed(1)} ${(padT + plotH).toFixed(1)} Z`;
+
+      // Porcentaje dentro del rango individual
+      const inRangeCount = pts.filter(p => p.val >= ind.ref[0] && p.val <= ind.ref[1]).length;
+      const pctInRange = Math.round((inRangeCount / pts.length) * 100);
+      document.getElementById('chart-plain-summary').textContent =
+        `Dentro del rango individual el ${pctInRange} % del periodo seleccionado.`;
+
+      // Líneas guía horizontales
+      const midV = Number(((minV + maxV) / 2).toFixed(ind.decimals));
+      const yTicks = [maxV, midV, minV];
+
+      // Marcador de inspección (hover o teclado)
+      const activeIdx = appState.scrubIndex !== null && appState.scrubIndex < coords.length
+        ? appState.scrubIndex
+        : coords.length - 1;
+      const activePt = coords[activeIdx];
+
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="vitalisAreaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--green)" stop-opacity="0.24" />
+            <stop offset="100%" stop-color="var(--green)" stop-opacity="0.0" />
+          </linearGradient>
+        </defs>
+
+        <!-- Líneas guía horizontales -->
+        ${yTicks.map(tv => {
+          const ty = toY(tv);
+          return `
+            <line x1="${padL}" y1="${ty}" x2="${W - padR}" y2="${ty}" stroke="var(--line)" stroke-width="1" />
+            <text x="${padL - 8}" y="${ty + 4}" text-anchor="end" fill="var(--text2)" font-family="IBM Plex Mono" font-size="11">
+              ${formatEs(tv, ind.decimals)}
+            </text>
+          `;
+        }).join('')}
+
+        <!-- Franja Verde = Rango Individual -->
+        <rect x="${padL}" y="${refTopY}" width="${plotW}" height="${refH}" fill="var(--green)" fill-opacity="0.16" rx="4" />
+        <line x1="${padL}" y1="${refTopY}" x2="${W - padR}" y2="${refTopY}" stroke="var(--green)" stroke-opacity="0.45" stroke-dasharray="4 4" stroke-width="1" />
+        <line x1="${padL}" y1="${refBotY}" x2="${W - padR}" y2="${refBotY}" stroke="var(--green)" stroke-opacity="0.45" stroke-dasharray="4 4" stroke-width="1" />
+
+        <!-- Área y Línea de Serie -->
+        <path d="${areaD}" fill="url(#vitalisAreaGrad)" />
+        <path d="${lineD}" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+
+        <!-- Marcadores de Evento (Rombo Ámbar) -->
+        ${coords.filter(c => c.isEvent).map(c => `
+          <polygon points="${c.x},${c.y - 6} ${c.x + 6},${c.y} ${c.x},${c.y + 6} ${c.x - 6},${c.y}" fill="var(--amber)" />
+        `).join('')}
+
+        <!-- Cursor vertical y punto activo -->
+        <line x1="${activePt.x}" y1="${padT}" x2="${activePt.x}" y2="${padT + plotH}" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3 3" />
+        <circle cx="${activePt.x}" cy="${activePt.y}" r="4.5" fill="var(--bg)" stroke="var(--accent)" stroke-width="2.2" />
+
+        <!-- Etiquetas de eje X -->
+        <text x="${padL}" y="${H - 5}" text-anchor="start" fill="var(--text2)" font-family="IBM Plex Mono" font-size="11">
+          ${coords[0].label}
+        </text>
+        <text x="${padL + plotW / 2}" y="${H - 5}" text-anchor="middle" fill="var(--text2)" font-family="IBM Plex Mono" font-size="11">
+          ${coords[Math.floor(coords.length / 2)].label}
+        </text>
+        <text x="${W - padR}" y="${H - 5}" text-anchor="end" fill="var(--text2)" font-family="IBM Plex Mono" font-size="11">
+          ${coords[coords.length - 1].label}
+        </text>
+      `;
+
+      // Actualizar Tooltip
+      const tooltip = document.getElementById('chart-tooltip');
+      if (appState.scrubIndex !== null) {
+        tooltip.classList.remove('hidden');
+        tooltip.textContent = `${activePt.label} · ${formatEs(activePt.val, ind.decimals)} ${ind.unit}`;
+      } else {
+        tooltip.classList.add('hidden');
+      }
+    }
+
+    // Eventos de ratón y teclado en el gráfico
+    const evoSvg = document.getElementById('evolution-svg');
+    evoSvg.addEventListener('mousemove', e => {
+      const rect = evoSvg.getBoundingClientRect();
+      const relX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const pts = appState.series[appState.selectedId][appState.timeRange];
+      appState.scrubIndex = Math.round(relX * (pts.length - 1));
+      renderEvolutionChart();
+    });
+    evoSvg.addEventListener('mouseleave', () => {
+      appState.scrubIndex = null;
+      renderEvolutionChart();
+    });
+    evoSvg.addEventListener('keydown', e => {
+      const pts = appState.series[appState.selectedId][appState.timeRange];
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const cur = appState.scrubIndex === null ? pts.length - 1 : appState.scrubIndex;
+        appState.scrubIndex = Math.max(0, cur - 1);
+        renderEvolutionChart();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        const cur = appState.scrubIndex === null ? pts.length - 1 : appState.scrubIndex;
+        appState.scrubIndex = Math.min(pts.length - 1, cur + 1);
+        renderEvolutionChart();
+      }
+    });
+
+    // ========================================================================
+    // 8. MOTOR DE IA LOCAL (REGLAS EN TIEMPO REAL, SIN CONEXIÓN EXTERNA)
+    // ========================================================================
+    function renderLocalAI() {
+      const medBox = document.getElementById('ai-medico-content');
+      const astBox = document.getElementById('ai-astronauta-content');
+      const medPills = document.getElementById('ai-medico-pills');
+
+      const fc = INDICATORS.find(i => i.id === 'fc');
+      const spo2 = INDICATORS.find(i => i.id === 'spo2');
+      const hrv = INDICATORS.find(i => i.id === 'hrv');
+      const maxLevel = Math.max(...INDICATORS.map(getIndicatorLevel));
+
+      if (appState.role === 'medico') {
+        medBox.classList.remove('hidden');
+        medPills.classList.remove('hidden');
+        astBox.classList.add('hidden');
+
+        let obs = '';
+        let hyp = '';
+
+        if (maxLevel >= 2) {
+          obs = `Observación: Elevación simultánea de FC (${fc.current} lpm) y FR con descenso de SpO₂ (${spo2.current} %) y HRV (${hrv.current} ms) fuera del rango individual de A-01.`;
+          hyp = `Hipótesis: Respuesta autonómica aguda o sobrecarga tras actividad; se recomienda reposo inmediato y reevaluación en 5 minutos.`;
+        } else if (appState.aiQuery === 'resumen24h') {
+          obs = `Observación: En las últimas 24 horas los 6 parámetros simulados se mantuvieron dentro de sus franjas individuales en más del 96 % de las muestras.`;
+          hyp = `Hipótesis: Estabilidad hemodinámica y buena recuperación nocturna en cabina; sin alertas pendientes.`;
+        } else if (appState.aiQuery === 'tendencia') {
+          obs = `Observación: Variabilidad cardíaca en ${hrv.current} ms (rango 40–70 ms) y frecuencia cardíaca basal estable en ${fc.current} lpm.`;
+          hyp = `Hipótesis: Balance autonómico conservado sin signos tempranos de fatiga acumulada.`;
+        } else if (appState.aiQuery === 'protocolo') {
+          obs = `Observación: Umbrales individuales activos para los 6 sensores simulados con actualización cada 1 segundo.`;
+          hyp = `Hipótesis: En caso de superar advertencia, el protocolo local indica pausar esfuerzo físico y notificar al equipo médico.`;
+        } else {
+          obs = `Observación: Los 6 signos vitales permanecen dentro del rango individual de A-01 (FC ${fc.current} lpm, SpO₂ ${spo2.current} %, HRV ${hrv.current} ms).`;
+          hyp = `Hipótesis: Estado basal estable en cabina; herramienta de apoyo sobre datos simulados sin diagnóstico clínico.`;
+        }
+
+        document.getElementById('ai-observation').innerHTML = `<strong>Observación:</strong> ${obs.replace('Observación: ', '')}`;
+        document.getElementById('ai-hypothesis').innerHTML = `<strong>Hipótesis:</strong> ${hyp.replace('Hipótesis: ', '')}`;
+      } else {
+        medBox.classList.add('hidden');
+        medPills.classList.add('hidden');
+        astBox.classList.remove('hidden');
+
+        const guidanceEl = document.getElementById('ai-astro-guidance');
+        if (maxLevel >= 2) {
+          guidanceEl.textContent = 'Tus pulsaciones y respiración están altas. Detén el ejercicio, descansa sentado y avisa al equipo médico.';
+        } else {
+          guidanceEl.textContent = 'Tus signos vitales están dentro de tu rango habitual. Puedes continuar con tus rutinas diarias con normalidad.';
+        }
+
+        // Actualizar siguiente misión pendiente
+        const nextMission = appState.missions.find(m => !m.done && !(maxLevel >= 2 && m.isExercise));
+        const nextLabel = document.getElementById('next-mission-label');
+        const doneBtn = document.getElementById('btn-complete-mission');
+        if (nextMission) {
+          nextLabel.textContent = `${nextMission.title} · +${nextMission.xp} XP`;
+          doneBtn.classList.remove('hidden');
+        } else {
+          nextLabel.textContent = 'Rutinas disponibles completadas hoy';
+          doneBtn.classList.add('hidden');
+        }
+      }
+    }
+
+    function setAiQuery(q) {
+      appState.aiQuery = q;
+      renderLocalAI();
+    }
+
+    // ========================================================================
+    // 9. INTERACCIONES DE USUARIO (ROL, TEMA, RUTINAS, MODALES, CSV)
+    // ========================================================================
+    function setRole(role) {
+      appState.role = role;
+      const btnMed = document.getElementById('role-btn-medico');
+      const btnAst = document.getElementById('role-btn-astronauta');
+
+      if (role === 'medico') {
+        btnMed.style.background = 'var(--pill-active)';
+        btnMed.setAttribute('aria-selected', 'true');
+        btnAst.style.background = 'transparent';
+        btnAst.setAttribute('aria-selected', 'false');
+      } else {
+        btnAst.style.background = 'var(--pill-active)';
+        btnAst.setAttribute('aria-selected', 'true');
+        btnMed.style.background = 'transparent';
+        btnMed.setAttribute('aria-selected', 'false');
+      }
+      renderAll();
+    }
+
+    function toggleTheme() {
+      appState.theme = appState.theme === 'dark' ? 'light' : 'dark';
+      const body = document.body;
+      const sun = document.getElementById('icon-sun');
+      const moon = document.getElementById('icon-moon');
+
+      if (appState.theme === 'light') {
+        body.classList.add('theme-light');
+        sun.classList.add('hidden');
+        moon.classList.remove('hidden');
+      } else {
+        body.classList.remove('theme-light');
+        sun.classList.remove('hidden');
+        moon.classList.add('hidden');
+      }
+      renderEvolutionChart();
+    }
+
+    function selectIndicator(id) {
+      appState.selectedId = id;
+      appState.scrubIndex = null;
+      renderVitalsGrid();
+      renderEvolutionChart();
+    }
+
+    function setTimeRange(range) {
+      appState.timeRange = range;
+      appState.scrubIndex = null;
+      ['vivo', '24h', '7d'].forEach(r => {
+        const btn = document.getElementById(`range-btn-${r}`);
+        if (r === range) {
+          btn.style.background = 'var(--pill-active)';
+          btn.setAttribute('aria-selected', 'true');
+        } else {
+          btn.style.background = 'transparent';
+          btn.setAttribute('aria-selected', 'false');
+        }
+      });
+      renderEvolutionChart();
+    }
+
+    function logIntervention() {
+      const input = document.getElementById('intervention-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const stamp = formatMissionClock(appState.missionSeconds);
+      appState.interventions.unshift(`${stamp} · ${text}`);
+      input.value = '';
+
+      const list = document.getElementById('intervention-log-list');
+      list.innerHTML = appState.interventions.map(item => `<li>• ${item}</li>`).join('');
+      showToast('Intervención registrada con marca de tiempo');
+    }
+
+    function completeNextMission() {
+      const maxLevel = Math.max(...INDICATORS.map(getIndicatorLevel));
+      const next = appState.missions.find(m => !m.done && !(maxLevel >= 2 && m.isExercise));
+      if (!next) return;
+      next.done = true;
+      appState.xp += next.xp;
+      showToast(`Rutina completada (+${next.xp} XP)`);
+      renderLocalAI();
+    }
+
+    function openMissionsModal() {
+      const maxLevel = Math.max(...INDICATORS.map(getIndicatorLevel));
+      const safetyBanner = document.getElementById('missions-safety-banner');
+      if (maxLevel >= 2) safetyBanner.classList.remove('hidden');
+      else safetyBanner.classList.add('hidden');
+
+      const list = document.getElementById('missions-checklist');
+      list.innerHTML = appState.missions.map((m, idx) => {
+        const locked = maxLevel >= 2 && m.isExercise;
+        return `
+          <div class="p-3 rounded-xl border flex items-center justify-between gap-2 ${locked ? 'opacity-50' : ''}"
+            style="background: var(--pill-bg); border-color: var(--line);">
+            <div>
+              <div class="text-[15px] font-medium ${m.done ? 'line-through opacity-70' : ''}">${m.title}</div>
+              <div class="font-mono text-[14px]" style="color: var(--text2);">
+                ${locked ? 'Pausado por seguridad' : `+${m.xp} XP`}
+              </div>
+            </div>
+            <button ${locked ? 'disabled' : ''} onclick="toggleMissionItem(${idx})"
+              class="px-3 py-1.5 rounded-[10px] text-[14px] font-semibold border cursor-pointer"
+              style="background: ${m.done ? 'var(--green)' : 'transparent'}; border-color: var(--line); color: ${m.done ? '#FFFFFF' : 'var(--text)'};">
+              ${m.done ? 'Completada' : 'Completar'}
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('xp-summary').textContent = `Nivel: Cadete · ${appState.xp} / 200 XP`;
+      document.getElementById('missions-modal').classList.remove('hidden');
+    }
+
+    function toggleMissionItem(idx) {
+      const m = appState.missions[idx];
+      m.done = !m.done;
+      appState.xp += m.done ? m.xp : -m.xp;
+      openMissionsModal();
+      renderLocalAI();
+    }
+
+    function openIndicatorInfo(id) {
+      const ind = INDICATORS.find(i => i.id === id);
+      if (!ind) return;
+      document.getElementById('info-modal-title').textContent = `${ind.astroName} (${ind.rangeText} ${ind.unit})`;
+      document.getElementById('info-modal-body').innerHTML = `
+        <p><strong>¿Qué mide?</strong> ${ind.whatMeasures}</p>
+        <p><strong>¿Cuándo avisar?</strong> ${ind.whenNotify}</p>
+      `;
+      document.getElementById('info-modal').classList.remove('hidden');
+    }
+
+    function openNotifyModal() {
+      document.getElementById('notify-modal').classList.remove('hidden');
+    }
+
+    function confirmNotifyTeam() {
+      closeAllModals();
+      showToast('Aviso enviado al equipo médico a bordo');
+    }
+
+    function closeAllModals() {
+      document.getElementById('notify-modal').classList.add('hidden');
+      document.getElementById('missions-modal').classList.add('hidden');
+      document.getElementById('info-modal').classList.add('hidden');
+    }
+
+    // Cerrar modales con tecla Esc
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeAllModals();
+    });
+
+    function exportCSV() {
+      const ind = INDICATORS.find(i => i.id === appState.selectedId) || INDICATORS[0];
+      const rows = appState.series[ind.id][appState.timeRange];
+      let csv = `Tiempo,Parametro,Valor,Unidad,Rango_Individual,Origen\n`;
+      rows.forEach(r => {
+        csv += `"${r.label}","${ind.abbr}","${formatEs(r.val, ind.decimals)}","${ind.unit}","${ind.rangeText}","Simulado"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `VITALIS_A01_${ind.id}_${appState.timeRange}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showToast(`CSV exportado (${ind.abbr} · ${appState.timeRange})`);
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const el = document.getElementById('toast-banner');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.add('hidden'), 3200);
+    }
+
+    // ========================================================================
+    // 10. ARRANQUE DEL SISTEMA
+    // ========================================================================
+    window.onload = function () {
+      initSeries();
+      setRole('medico');
+      setTimeRange('vivo');
+      renderAll();
+      setInterval(stepTelemetry, 1000);
+    };
+  </script>
+</body>
+</html>

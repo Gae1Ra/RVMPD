@@ -1,55 +1,75 @@
-import { STATUS_WORD } from '../meta'
-import type { LinkMode } from '../useTelemetry'
-import type { Frame } from '../types'
-import { StatusIcon } from './Status'
+import React from 'react'
+import type { Level } from '../types'
+import { getLevelMeta } from '../constants'
+import { LevelShape } from './LevelShape'
 
-export type ViewMode = 'console' | 'hud'
-
-interface Props {
-  frame: Frame
-  mode: LinkMode
-  view: ViewMode
-  onView: (v: ViewMode) => void
-  onRadiation: () => void
+interface StatusBarProps {
+  globalLevel: Level
+  readiness: number
+  dataAgeSeconds: number
+  onExportCsv: () => void
+  onOpenNotifyModal: () => void
 }
 
-export function StatusBar({ frame, mode, view, onView, onRadiation }: Props) {
-  const { global, radiation } = frame
-  const pct = (n: number) => Math.round(n * 100)
+export const StatusBar: React.FC<StatusBarProps> = ({
+  globalLevel,
+  readiness,
+  dataAgeSeconds,
+  onExportCsv,
+  onOpenNotifyModal,
+}) => {
+  const meta = getLevelMeta(globalLevel)
+
+  const isAlertActive = globalLevel >= 2
+
   return (
-    <header className="statusbar">
-      <div className="statusbar-row">
-        <h1 className="brand">VITALIS</h1>
-        <span className={`global tone-${global.status}`}>
-          <StatusIcon tone={global.status} size={18} />
-          <span>{STATUS_WORD[global.status]}</span>
+    <section aria-live="polite" className="vitalis-glass px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+        {/* Indicador Semántico Global (Forma + Color) */}
+        <span className="inline-flex items-center justify-center w-5 h-5" aria-hidden="true">
+          <LevelShape level={globalLevel} size={18} />
         </span>
-        <div className="segmented" role="group" aria-label="Display mode">
-          {(['console', 'hud'] as const).map((v) => (
-            <button key={v} type="button" aria-pressed={view === v} onClick={() => onView(v)}>
-              {v === 'console' ? 'Console' : 'HUD'}
-            </button>
-          ))}
+
+        <div className="flex flex-wrap items-baseline gap-2 text-[15px] sm:text-[16px]">
+          <span
+            className="font-semibold"
+            style={{ color: globalLevel > 0 ? meta.colorVar : 'var(--text)' }}
+          >
+            {meta.globalTitle}
+          </span>
+          <span style={{ color: 'var(--text2)' }}>·</span>
+          <span className="font-mono tabular-nums text-[14px] sm:text-[15px]" style={{ color: 'var(--text2)' }}>
+            Preparación <strong style={{ color: 'var(--text)' }}>{readiness}</strong>
+          </span>
+          <span style={{ color: 'var(--text2)' }}>·</span>
+          <span className="font-mono tabular-nums text-[14px]" style={{ color: 'var(--text2)' }}>
+            hace {dataAgeSeconds} s
+          </span>
         </div>
       </div>
-      <div className="statusbar-row statusbar-meta">
+
+      {/* Acciones Rápidas */}
+      <div className="flex items-center gap-2.5">
         <button
-          type="button"
-          className={`pill tone-${radiation.status}`}
-          onClick={onRadiation}
-          aria-label={`Radiation ${STATUS_WORD[radiation.status]}: ${radiation.dose_rate_usv_h} microsieverts per hour, ${radiation.dose_total_msv} millisieverts total`}
+          onClick={onExportCsv}
+          className="px-3.5 py-2 rounded-[11px] text-[14px] font-medium border transition cursor-pointer"
+          style={{ background: 'var(--pill-bg)', borderColor: 'var(--line)', color: 'var(--text)' }}
         >
-          <StatusIcon tone={radiation.status} />
-          <span className="num">
-            {radiation.dose_rate_usv_h.toFixed(1)} µSv/h · {radiation.dose_total_msv.toFixed(3)} mSv
-          </span>
+          Exportar CSV
         </button>
-        <span className="badge num">
-          SQI {pct(global.sqi)}% · {pct(global.confidence)}% conf
-        </span>
-        <span className="badge">Link {global.link}</span>
-        {mode === 'demo' && <span className="badge badge-demo">Demo data</span>}
+
+        <button
+          onClick={onOpenNotifyModal}
+          className="px-4 py-2 rounded-[11px] text-[14px] font-semibold border transition cursor-pointer"
+          style={{
+            background: isAlertActive ? meta.colorVar : 'var(--pill-bg)',
+            borderColor: isAlertActive ? meta.colorVar : 'var(--line)',
+            color: isAlertActive ? '#FFFFFF' : 'var(--text)',
+          }}
+        >
+          Avisar equipo
+        </button>
       </div>
-    </header>
+    </section>
   )
 }
