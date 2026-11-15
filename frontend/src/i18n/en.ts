@@ -25,6 +25,17 @@ export const en: Dictionary = {
     toggle: 'Toggle light or dark theme',
     title: 'Toggle dark / light theme',
   },
+  voice: {
+    mute: 'Mute voice',
+    unmute: 'Unmute voice',
+    volume: 'Voice volume',
+    unlockBanner: 'Tap once to enable voice',
+    unlockAction: 'Enable voice',
+    statusEleven: 'ElevenLabs voice',
+    statusBrowser: 'Browser voice',
+    statusMuted: 'Muted',
+    normalized: 'Vitals have returned to your normal range.',
+  },
   lang: {
     es: 'ES',
     en: 'EN',

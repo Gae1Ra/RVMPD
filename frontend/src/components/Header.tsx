@@ -1,6 +1,7 @@
 import React from 'react'
 import type { Role, Surface } from '../types'
 import type { LinkMode } from '../hooks/useTelemetry'
+import type { VoiceProviderLabel } from '../voice/service'
 import { ScenarioSelector } from './ScenarioSelector'
 import { LangSwitcher, useT } from '../i18n'
 
@@ -15,6 +16,11 @@ interface HeaderProps {
   linkMode?: LinkMode
   scenarioId: string
   onSetScenario: (id: string) => Promise<void>
+  voiceMuted?: boolean
+  voiceVolume?: number
+  voiceProvider?: VoiceProviderLabel
+  onToggleMute?: () => void
+  onVolumeChange?: (v: number) => void
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -28,10 +34,21 @@ export const Header: React.FC<HeaderProps> = ({
   linkMode = 'connecting',
   scenarioId,
   onSetScenario,
+  voiceMuted = false,
+  voiceVolume = 0.85,
+  voiceProvider = 'unknown',
+  onToggleMute,
+  onVolumeChange,
 }) => {
   const { t } = useT()
   const linkLabel =
     linkMode === 'live' ? t.link.live : linkMode === 'demo' ? t.link.demo : t.link.connecting
+  const voiceStatus =
+    voiceMuted || voiceProvider === 'muted'
+      ? t.voice.statusMuted
+      : voiceProvider === 'elevenlabs'
+        ? t.voice.statusEleven
+        : t.voice.statusBrowser
 
   return (
     <header className="vitalis-glass px-4 py-3 flex flex-wrap items-center justify-between gap-3">
@@ -103,6 +120,50 @@ export const Header: React.FC<HeaderProps> = ({
         <ScenarioSelector current={scenarioId} onSelect={onSetScenario} />
 
         <LangSwitcher />
+
+        {onToggleMute && (
+          <div
+            className="flex items-center gap-1.5 px-2 py-1 rounded-[12px] border"
+            style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
+          >
+            <button
+              type="button"
+              onClick={onToggleMute}
+              aria-label={voiceMuted ? t.voice.unmute : t.voice.mute}
+              title={voiceMuted ? t.voice.unmute : t.voice.mute}
+              className="touch-target w-9 h-9 rounded-[8px] flex items-center justify-center cursor-pointer"
+              style={{ color: 'var(--text)' }}
+            >
+              {voiceMuted ? (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" />
+                  <path strokeLinecap="round" d="M23 9l-6 6M17 9l6 6" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" />
+                  <path strokeLinecap="round" d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07" />
+                </svg>
+              )}
+            </button>
+            {onVolumeChange && (
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={voiceVolume}
+                onChange={(e) => onVolumeChange(Number(e.target.value))}
+                aria-label={t.voice.volume}
+                className="w-16 accent-[var(--accent)]"
+                disabled={voiceMuted}
+              />
+            )}
+            <span className="font-mono text-[11px] whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
+              {voiceStatus}
+            </span>
+          </div>
+        )}
 
         <div
           className="p-1 rounded-[12px] flex items-center gap-0.5 border"

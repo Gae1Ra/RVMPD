@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS reports (
     id INTEGER PRIMARY KEY, t TEXT NOT NULL, window_minutes INTEGER, engine TEXT, body TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS llm_spend (
     id INTEGER PRIMARY KEY CHECK (id = 1), spent_usd REAL NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS tts_spend (
+    id INTEGER PRIMARY KEY CHECK (id = 1), chars_used INTEGER NOT NULL DEFAULT 0);
 """
 _INSERT_SAMPLE = (
     "INSERT INTO samples (t, mission_t, scenario, "
@@ -170,3 +172,19 @@ class Database:
             )
             row = conn.execute("SELECT spent_usd FROM llm_spend WHERE id = 1").fetchone()
         return float(row["spent_usd"])
+
+    def get_tts_chars_used(self) -> int:
+        with self._conn() as conn:
+            row = conn.execute("SELECT chars_used FROM tts_spend WHERE id = 1").fetchone()
+        return int(row["chars_used"]) if row else 0
+
+    def add_tts_chars(self, chars: int) -> int:
+        """Add characters sent to ElevenLabs (non-cache) and return the new total."""
+        with self._conn() as conn:
+            conn.execute(
+                "INSERT INTO tts_spend (id, chars_used) VALUES (1, ?) "
+                "ON CONFLICT(id) DO UPDATE SET chars_used = chars_used + excluded.chars_used",
+                (int(chars),),
+            )
+            row = conn.execute("SELECT chars_used FROM tts_spend WHERE id = 1").fetchone()
+        return int(row["chars_used"])

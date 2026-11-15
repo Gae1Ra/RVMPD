@@ -139,6 +139,38 @@ Rules:
 - `configured` is true when a model path is selected via env vars (does not prove the key works).
 - `spent_usd` is cumulative estimated spend from token usage stored in SQLite; `cap_usd` is the hard cap.
 
+## Spoken alerts (TTS)
+
+Optional ElevenLabs text-to-speech for spoken diagnostics. When the key/voices are missing, the spend cap is hit, or the network fails, the API returns a clear browser-fallback payload so the client can use `speechSynthesis`.
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| POST | `/api/tts` | `{"text": str, "lang": "es"\|"en"}` | MP3 audio (`audio/mpeg`), or 503 fallback JSON |
+| GET | `/api/tts/status` | | provider readiness and character spend (no network) |
+
+`POST /api/tts` success: raw MP3 bytes. Soft failures return **503** with:
+
+```json
+{"fallback": "browser", "reason": "missing_key"}
+```
+
+Known `reason` values: `missing_key`, `missing_voice`, `char_cap`, `text_too_long`, `empty_text`, `timeout`, `network`, `invalid_key`, `quota`. Max **500** characters per request. Characters are counted only on ElevenLabs cache misses; hits under `backend/data/tts_cache/` spend nothing.
+
+`GET /api/tts/status` (no network):
+
+```json
+{
+  "provider": "elevenlabs",
+  "configured": true,
+  "chars_used": 120,
+  "chars_cap": 3000
+}
+```
+
+- `provider` is `elevenlabs` when `ELEVENLABS_API_KEY` and both voice ids are set, otherwise `browser`.
+- `configured` does not prove the key works.
+- `chars_used` / `chars_cap` track characters sent to ElevenLabs (SQLite); default cap `VITALIS_TTS_CHAR_CAP=3000`.
+
 ## Medical AI (additive appendix — proposed)
 
 Optional routes for the contained medical AI template (`docs/AI_MEDICAL.md`).

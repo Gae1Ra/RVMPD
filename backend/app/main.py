@@ -11,7 +11,9 @@ from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnec
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from . import analysis, llm
+from fastapi.responses import JSONResponse, Response
+
+from . import analysis, llm, tts
 from .alerts import AlertTracker
 from .db import Database, now_iso
 from .medical_ai import insight_from_vitals, provider_status
@@ -129,6 +131,11 @@ class MedicalAiIn(BaseModel):
     alert_titles: list[str] = Field(default_factory=list)
 
 
+class TtsIn(BaseModel):
+    text: str = Field(..., min_length=1)
+    lang: Literal["en", "es"] = "en"
+
+
 async def run_simulation(app):
     """Advance the simulation in real time and broadcast each frame to every client."""
     next_tick = asyncio.get_running_loop().time()
@@ -237,6 +244,25 @@ def analysis_engine():
 @app.get("/api/spaceweather")
 async def spaceweather():
     return await get_spaceweather()
+
+
+@app.get("/api/tts/status")
+def tts_status():
+    """ElevenLabs readiness and character spend (no network)."""
+    return tts.status(app.state.db)
+
+
+@app.post("/api/tts")
+def run_tts(body: TtsIn):
+    """Synthesize MP3 via ElevenLabs (cached). On soft failure return 503 browser fallback."""
+    try:
+        audio = tts.synthesize(body.text, body.lang, db=app.state.db)
+    except tts.TtsFallback as e:
+        return JSONResponse(
+            status_code=503,
+            content={"fallback": "browser", "reason": e.reason},
+        )
+    return Response(content=audio, media_type="audio/mpeg")
 
 
 @app.get("/api/medical-ai/status")
