@@ -1,11 +1,49 @@
-import type { Indicator, Level, LevelMeta, Mission } from './types'
+import type { Indicator, IndicatorId, Level, LevelMeta, MetricKey, Mission, Status } from './types'
+import { formatNumber } from './i18n/format'
+import type { Locale } from './i18n/es'
 
+/** UI indicator id ↔ CONTRACT vital key */
+export const INDICATOR_METRIC: Record<IndicatorId, MetricKey> = {
+  fc: 'hr',
+  spo2: 'spo2',
+  pa: 'bp_sys',
+  fr: 'resp_rate',
+  temp: 'temp',
+  hrv: 'hrv_rmssd',
+}
+
+export const METRIC_INDICATOR: Record<MetricKey, IndicatorId> = {
+  hr: 'fc',
+  spo2: 'spo2',
+  bp_sys: 'pa',
+  resp_rate: 'fr',
+  temp: 'temp',
+  hrv_rmssd: 'hrv',
+}
+
+/**
+ * Backend status (green/amber/red) → UI Level (0–3).
+ * Level 1 (OBSERVACIÓN) is unused for ternary backend status; reserved for local threshold logic.
+ * Documented in DECISIONES.md §5.
+ */
+export function statusToLevel(status: Status): Level {
+  switch (status) {
+    case 'red':
+      return 3
+    case 'amber':
+      return 2
+    default:
+      return 0
+  }
+}
+
+/** Structural indicator seeds — visible strings come from i18n dictionaries. */
 export const INITIAL_INDICATORS: Indicator[] = [
   {
     id: 'fc',
     abbr: 'FC',
-    astroName: 'Frecuencia cardíaca',
-    clinicalName: 'Frecuencia Cardíaca',
+    astroName: '',
+    clinicalName: '',
     unit: 'lpm',
     decimals: 0,
     base: 72,
@@ -17,15 +55,16 @@ export const INITIAL_INDICATORS: Indicator[] = [
     rangeText: '60–80',
     chartMin: 40,
     chartMax: 140,
-    plainDesc: 'Latidos por minuto en reposo dentro de tu margen habitual.',
-    whatMeasures: 'Mide cuántas veces late tu corazón cada minuto.',
-    whenNotify: 'Avisa si supera 100 lpm en reposo o sientes palpitaciones o mareo.',
+    plainDesc: '',
+    whatMeasures: '',
+    whenNotify: '',
+    metricKey: 'hr',
   },
   {
     id: 'spo2',
     abbr: 'SpO₂',
-    astroName: 'Oxígeno en sangre',
-    clinicalName: 'Saturación de Oxígeno',
+    astroName: '',
+    clinicalName: '',
     unit: '%',
     decimals: 0,
     base: 98,
@@ -37,37 +76,37 @@ export const INITIAL_INDICATORS: Indicator[] = [
     rangeText: '95–100',
     chartMin: 85,
     chartMax: 100,
-    plainDesc: 'Transporte de oxígeno estable en sangre.',
-    whatMeasures: 'Indica el porcentaje de oxígeno que transportan tus glóbulos rojos.',
-    whenNotify: 'Avisa de inmediato si baja de 92 % o notas falta de aire.',
+    plainDesc: '',
+    whatMeasures: '',
+    whenNotify: '',
+    metricKey: 'spo2',
   },
   {
     id: 'pa',
     abbr: 'PA',
-    astroName: 'Presión arterial',
-    clinicalName: 'Presión Arterial (sistólica)',
+    astroName: '',
+    clinicalName: '',
     unit: 'mmHg',
     decimals: 0,
     base: 118,
     current: 118,
-    diastolic: 78,
     prevEvent: 118,
-    prevDiastolic: 78,
     ref: [110, 125],
     warn: [100, 138],
     crit: [90, 155],
     rangeText: '110–125',
     chartMin: 85,
     chartMax: 165,
-    plainDesc: 'Tensión sistólica y diastólica equilibradas.',
-    whatMeasures: 'Mide la fuerza con la que circula la sangre por tus arterias.',
-    whenNotify: 'Avisa si sube por encima de 138 mmHg o baja de 100 mmHg con debilidad.',
+    plainDesc: '',
+    whatMeasures: '',
+    whenNotify: '',
+    metricKey: 'bp_sys',
   },
   {
     id: 'fr',
     abbr: 'FR',
-    astroName: 'Respiración',
-    clinicalName: 'Frecuencia Respiratoria',
+    astroName: '',
+    clinicalName: '',
     unit: 'rpm',
     decimals: 0,
     base: 15,
@@ -79,15 +118,16 @@ export const INITIAL_INDICATORS: Indicator[] = [
     rangeText: '12–18',
     chartMin: 6,
     chartMax: 32,
-    plainDesc: 'Ritmo respiratorio pausado y regular.',
-    whatMeasures: 'Cuenta cuántas respiraciones completas realizas por minuto.',
-    whenNotify: 'Avisa si supera 22 rpm sin haber hecho esfuerzo físico.',
+    plainDesc: '',
+    whatMeasures: '',
+    whenNotify: '',
+    metricKey: 'resp_rate',
   },
   {
     id: 'temp',
     abbr: 'Temp.',
-    astroName: 'Temperatura',
-    clinicalName: 'Temperatura Corporal',
+    astroName: '',
+    clinicalName: '',
     unit: '°C',
     decimals: 1,
     base: 36.8,
@@ -96,18 +136,19 @@ export const INITIAL_INDICATORS: Indicator[] = [
     ref: [36.2, 37.2],
     warn: [35.8, 37.8],
     crit: [35.0, 38.5],
-    rangeText: '36,2–37,2',
+    rangeText: '36.2–37.2',
     chartMin: 34.8,
     chartMax: 39.0,
-    plainDesc: 'Termorregulación basal estable en cabina.',
-    whatMeasures: 'Mide la temperatura interna de tu cuerpo en grados Celsius.',
-    whenNotify: 'Avisa si alcanza 37,8 °C o más, o si sientes escalofríos.',
+    plainDesc: '',
+    whatMeasures: '',
+    whenNotify: '',
+    metricKey: 'temp',
   },
   {
     id: 'hrv',
     abbr: 'HRV',
-    astroName: 'Variabilidad',
-    clinicalName: 'Variabilidad Cardíaca',
+    astroName: '',
+    clinicalName: '',
     unit: 'ms',
     decimals: 0,
     base: 54,
@@ -119,22 +160,24 @@ export const INITIAL_INDICATORS: Indicator[] = [
     rangeText: '40–70',
     chartMin: 10,
     chartMax: 100,
-    plainDesc: 'Buena reserva de recuperación y descanso.',
-    whatMeasures: 'Mide la variación en milisegundos entre cada latido; refleja recuperación.',
-    whenNotify: 'Avisa si cae por debajo de 28 ms junto con cansancio intenso.',
+    plainDesc: '',
+    whatMeasures: '',
+    whenNotify: '',
+    metricKey: 'hrv_rmssd',
   },
 ]
 
 export const INITIAL_MISSIONS: Mission[] = [
-  { id: 'water', title: 'Beber un vaso de agua', xp: 10, done: false, isExercise: false },
-  { id: 'breath', title: 'Respiración guiada (4 ciclos)', xp: 20, done: false, isExercise: false },
-  { id: 'react', title: 'Prueba de reacción (3 intentos)', xp: 25, done: false, isExercise: false },
-  { id: 'exercise', title: 'Ejercicio de resistencia', xp: 40, done: false, isExercise: true },
-  { id: 'rest', title: 'Rutina de descanso', xp: 20, done: false, isExercise: false },
+  { id: 'water', title: 'water', xp: 10, done: false, isExercise: false },
+  { id: 'breath', title: 'breath', xp: 20, done: false, isExercise: false },
+  { id: 'react', title: 'react', xp: 25, done: false, isExercise: false },
+  { id: 'exercise', title: 'exercise', xp: 40, done: false, isExercise: true },
+  { id: 'rest', title: 'rest', xp: 20, done: false, isExercise: false },
 ]
 
-export function formatEs(val: number, decimals = 0): string {
-  return Number(val).toFixed(decimals).replace('.', ',')
+/** @deprecated Prefer useT().formatNumber — kept for non-React helpers. */
+export function formatEs(val: number, decimals = 0, locale: Locale = 'es'): string {
+  return formatNumber(val, decimals, locale)
 }
 
 export function formatMissionClock(totalSeconds: number): string {
@@ -146,20 +189,28 @@ export function formatMissionClock(totalSeconds: number): string {
 }
 
 export function getIndicatorLevel(ind: Indicator): Level {
+  if (ind.status) return statusToLevel(ind.status)
   const v = ind.current
-  if (v < ind.crit[0] || v > ind.crit[1]) return 3 // Crítico
-  if (v < ind.warn[0] || v > ind.warn[1]) return 2 // Advertencia
-  if (v < ind.ref[0] || v > ind.ref[1]) return 1 // Observación
-  return 0 // Normal
+  if (v < ind.crit[0] || v > ind.crit[1]) return 3
+  if (v < ind.warn[0] || v > ind.warn[1]) return 2
+  if (v < ind.ref[0] || v > ind.ref[1]) return 1
+  return 0
 }
 
-export function getLevelMeta(level: Level): LevelMeta {
+export function getLevelMeta(
+  level: Level,
+  labels?: { label: string; globalTitle: string },
+): LevelMeta {
+  const text = labels ?? {
+    label: ['NORMAL', 'OBSERVACIÓN', 'ADVERTENCIA', 'CRÍTICO'][level],
+    globalTitle: ['Todo en orden', 'En observación', 'Haz una pausa', 'Avisa ahora'][level],
+  }
   switch (level) {
     case 3:
       return {
         level: 3,
-        label: 'CRÍTICO',
-        globalTitle: 'Avisa ahora',
+        label: text.label,
+        globalTitle: text.globalTitle,
         colorVar: 'var(--danger)',
         bgVar: 'var(--danger)',
         shape: 'square',
@@ -168,8 +219,8 @@ export function getLevelMeta(level: Level): LevelMeta {
     case 2:
       return {
         level: 2,
-        label: 'ADVERTENCIA',
-        globalTitle: 'Haz una pausa',
+        label: text.label,
+        globalTitle: text.globalTitle,
         colorVar: 'var(--danger)',
         bgVar: 'var(--danger-bg)',
         shape: 'triangle',
@@ -178,8 +229,8 @@ export function getLevelMeta(level: Level): LevelMeta {
     case 1:
       return {
         level: 1,
-        label: 'OBSERVACIÓN',
-        globalTitle: 'En observación',
+        label: text.label,
+        globalTitle: text.globalTitle,
         colorVar: 'var(--status-watch)',
         bgVar: 'var(--surface-data)',
         shape: 'diamond',
@@ -188,8 +239,8 @@ export function getLevelMeta(level: Level): LevelMeta {
     default:
       return {
         level: 0,
-        label: 'NORMAL',
-        globalTitle: 'Todo en orden',
+        label: text.label,
+        globalTitle: text.globalTitle,
         colorVar: 'var(--accent)',
         bgVar: 'var(--glow-blue)',
         shape: 'circle',

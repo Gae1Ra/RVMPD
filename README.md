@@ -18,19 +18,19 @@ VITALIS reads the astronaut's vital signs and the radiation dose, compares each 
 
 ## Run it
 
-You need Python 3.11 or newer and Node 20 or newer.
+You need Python 3.11 or newer and Node 20 or newer. Run **both** processes so the UI gets live WebSocket frames; if the backend is down, the frontend falls back to its local demo simulator automatically.
 
-Backend:
+### 1. Backend (terminal A)
 
 ```
 cd backend
 python -m venv .venv
-.venv\Scripts\activate        # macOS/Linux: source .venv/bin/activate
+source .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn app.main:app --port 8000
 ```
 
-Frontend, in a second terminal:
+### 2. Frontend (terminal B)
 
 ```
 cd frontend
@@ -38,7 +38,18 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173. Use the scenario picker to trigger a solar particle event, hypoxia, a loose electrode or fatigue.
+Open http://localhost:5173. Vite proxies `/api` and `/ws` to `http://localhost:8000`. Optional: set `VITE_API_URL` (e.g. `http://localhost:8000`) to talk to the backend without the proxy.
+
+Use the scenario picker in the header (Nominal, Solar particle event, Hypoxia, Loose electrode, Fatigue). Switch language with **ES | EN** in the header or on the wrist view (choice is stored in `localStorage`, default Spanish).
+
+## Adding a language
+
+1. Copy `frontend/src/i18n/es.ts` to `frontend/src/i18n/<code>.ts` and translate every string (same keys).
+2. Type the new file as `Dictionary` (imported from `es.ts`) so `npm run build` fails if a key is missing.
+3. Register it in `frontend/src/i18n/context.tsx` (`dictionaries` map and `Locale` / `LangSwitcher`).
+4. Extend `Locale` in `frontend/src/i18n/es.ts` and the number-format map in `frontend/src/i18n/format.ts`.
+
+UI copy is fully localizable. Backend alert guides, analysis reports, and scenario names stay in English until the CONTRACT adds a locale field (see `DECISIONES.md` §8).
 
 ## How it works
 

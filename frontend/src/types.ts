@@ -34,6 +34,14 @@ export interface Indicator {
   plainDesc: string
   whatMeasures: string
   whenNotify: string
+  /** From CONTRACT Vital when telemetry is connected */
+  baseline?: number
+  delta?: number
+  sqi?: number
+  status?: Status
+  /** True when an active alert for this metric has origin === 'artifact' */
+  artifact?: boolean
+  metricKey?: MetricKey
 }
 
 export interface SeriesPoint {
@@ -52,8 +60,8 @@ export interface Mission {
 
 export interface LevelMeta {
   level: Level
-  label: 'NORMAL' | 'OBSERVACIÓN' | 'ADVERTENCIA' | 'CRÍTICO' | 'Normal' | 'Observación' | 'Advertencia' | 'Crítico'
-  globalTitle: 'Todo en orden' | 'En observación' | 'Haz una pausa' | 'Avisa ahora'
+  label: string
+  globalTitle: string
   colorVar: string
   bgVar: string
   shape: 'circle' | 'diamond' | 'triangle' | 'square'

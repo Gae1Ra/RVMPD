@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
 import type { AiQuery, Indicator, IndicatorId, Level, Mission } from '../types'
-import { formatEs, getIndicatorLevel, getLevelMeta } from '../constants'
+import { getIndicatorLevel } from '../constants'
 import { LevelShape } from './LevelShape'
+import { LangSwitcher, useT } from '../i18n'
+import { localizedLevelMeta } from '../i18n/localize'
 
 interface WristAppProps {
   indicators: Indicator[]
@@ -14,6 +16,7 @@ interface WristAppProps {
   onToggleMission: (id: string) => void
   onNotifyTeam: () => void
   isOffline?: boolean
+  linkLive?: boolean
 }
 
 type WristScreen = 'estado' | 'signos' | 'detalle' | 'avisar' | 'rutina' | 'asistente'
@@ -29,7 +32,9 @@ export const WristApp: React.FC<WristAppProps> = ({
   onCompleteNextMission,
   onNotifyTeam,
   isOffline = false,
+  linkLive = false,
 }) => {
+  const { t, tf, formatNumber } = useT()
   const [screen, setScreen] = useState<WristScreen>('estado')
   const [selectedIndId, setSelectedIndId] = useState<IndicatorId>('fc')
   const [preset, setPreset] = useState<WristPreset>('square')
@@ -37,38 +42,22 @@ export const WristApp: React.FC<WristAppProps> = ({
   const [aiQuery, setAiQuery] = useState<AiQuery>('default')
   const [dismissedAlertLevel, setDismissedAlertLevel] = useState<number>(-1)
 
-  const meta = getLevelMeta(globalLevel)
+  const meta = localizedLevelMeta(globalLevel, t)
   const isSafetyActive = globalLevel >= 2
 
-  // Find the vital sign with highest deviation/level
-  const highestVital = [...indicators].sort(
-    (a, b) => getIndicatorLevel(b) - getIndicatorLevel(a)
-  )[0]
+  const highestVital = [...indicators].sort((a, b) => getIndicatorLevel(b) - getIndicatorLevel(a))[0]
   const highestLevel = getIndicatorLevel(highestVital)
-
   const selectedInd = indicators.find((i) => i.id === selectedIndId) || indicators[0]
-
-  // Siguiente rutina
   const nextMission = missions.find((m) => !m.done && !(isSafetyActive && m.isExercise))
 
-  // AI text for wrist (short 1-2 sentences)
   const getWristAiText = () => {
-    if (globalLevel >= 2) {
-      return 'Pulsaciones y respiración elevadas. Descansa sentado y avisa al equipo médico.'
-    }
-    if (aiQuery === 'resumen24h') {
-      return 'Más del 96 % de tus lecturas en rango individual en 24h. Sin alertas.'
-    }
-    if (aiQuery === 'tendencia') {
-      return 'Variabilidad y ritmo basal equilibrados. Buena reserva de recuperación.'
-    }
-    if (aiQuery === 'protocolo') {
-      return 'Umbrales personales activos. Si sube a advertencia, pausa el esfuerzo.'
-    }
-    return 'Tus signos vitales están en rango habitual. Puedes continuar tus tareas con normalidad.'
+    if (globalLevel >= 2) return t.wrist.aiAlert
+    if (aiQuery === 'resumen24h') return t.wrist.aiSummary
+    if (aiQuery === 'tendencia') return t.wrist.aiTrend
+    if (aiQuery === 'protocolo') return t.wrist.aiProtocol
+    return t.wrist.aiDefault
   }
 
-  // Fullscreen alert trigger for level >= 2 unless dismissed
   const showFullscreenAlert = globalLevel >= 2 && dismissedAlertLevel !== globalLevel
 
   const handleOpenDetail = (id: IndicatorId) => {
@@ -85,21 +74,21 @@ export const WristApp: React.FC<WristAppProps> = ({
     }, 2500)
   }
 
+  const formatVital = (ind: Indicator) =>
+    ind.id === 'pa' && ind.diastolic !== undefined
+      ? `${ind.current}/${ind.diastolic}`
+      : formatNumber(ind.current, ind.decimals)
+
   const renderContent = () => {
     switch (screen) {
-      /* ====================================================================
-         1. ESTADO (INICIO)
-         ==================================================================== */
       case 'estado':
         return (
           <div className="flex flex-col h-full justify-between p-4 text-center">
-            {/* Cabecera del reloj */}
             <div className="flex items-center justify-between text-[13px] font-mono text-[var(--text-muted)] pt-1">
               <span>{missionClock.slice(-8)}</span>
               <span>A-01</span>
             </div>
 
-            {/* Estado principal glanceable */}
             <div className="my-auto space-y-2 flex flex-col items-center">
               <div
                 className="w-16 h-16 rounded-full flex items-center justify-center border-2 shadow-lg"
@@ -114,12 +103,11 @@ export const WristApp: React.FC<WristAppProps> = ({
                 {meta.globalTitle}
               </div>
               <div className="text-[14px] font-mono text-[var(--text-muted)]">
-                Preparación{' '}
+                {t.wrist.prep}{' '}
                 <span className="text-[24px] font-bold text-[var(--text)]">{readiness}</span>
                 /100
               </div>
 
-              {/* Indicador más relevante */}
               <button
                 onClick={() => handleOpenDetail(highestVital.id)}
                 className="w-full mt-2 p-2.5 rounded-xl border flex items-center justify-between min-h-[44px] cursor-pointer"
@@ -130,38 +118,36 @@ export const WristApp: React.FC<WristAppProps> = ({
                   <span className="text-[14px] font-medium">{highestVital.astroName}</span>
                 </div>
                 <span className="font-mono tabular-nums text-[15px] font-semibold">
-                  {highestVital.id === 'pa'
-                    ? `${highestVital.current}/${highestVital.diastolic ?? 78}`
-                    : formatEs(highestVital.current, highestVital.decimals)}{' '}
-                  {highestVital.unit}
+                  {formatVital(highestVital)} {highestVital.unit}
+                  {highestVital.delta !== undefined && (
+                    <span className="text-[12px] font-normal text-[var(--text-muted)] ml-1">
+                      {highestVital.delta > 0 ? '+' : ''}
+                      {formatNumber(highestVital.delta, highestVital.decimals)}
+                    </span>
+                  )}
                 </span>
               </button>
             </div>
 
-            {/* Antigüedad del dato */}
             <div className="text-[12px] font-mono text-[var(--text-muted)]">
-              hace {dataAgeSeconds} s · Simulado
+              {tf(t.wrist.agoSim, {
+                n: dataAgeSeconds,
+                source: linkLive ? t.wrist.live : t.wrist.simulated,
+              })}
             </div>
           </div>
         )
 
-      /* ====================================================================
-         2. SIGNOS VITALES
-         ==================================================================== */
       case 'signos':
         return (
           <div className="flex flex-col h-full p-3">
             <div className="text-[15px] font-bold mb-2 px-1 flex items-center justify-between">
-              <span>Signos Vitales</span>
-              <span className="text-[12px] font-mono text-[var(--text-muted)]">6 signos</span>
+              <span>{t.wrist.vitalsTitle}</span>
+              <span className="text-[12px] font-mono text-[var(--text-muted)]">{t.wrist.sixSigns}</span>
             </div>
             <div className="space-y-1.5 overflow-y-auto flex-1 pr-1">
               {indicators.map((ind) => {
                 const lvl = getIndicatorLevel(ind)
-                const valStr =
-                  ind.id === 'pa'
-                    ? `${ind.current}/${ind.diastolic ?? 78}`
-                    : formatEs(ind.current, ind.decimals)
                 return (
                   <button
                     key={ind.id}
@@ -172,9 +158,21 @@ export const WristApp: React.FC<WristAppProps> = ({
                     <div className="flex items-center gap-2">
                       <LevelShape level={lvl} size={14} />
                       <span className="text-[14px] font-medium">{ind.abbr}</span>
+                      {ind.artifact && (
+                        <span className="text-[10px] font-mono" style={{ color: 'var(--status-watch)' }}>
+                          {t.wrist.artShort}
+                        </span>
+                      )}
                     </div>
                     <div className="font-mono tabular-nums text-[15px] font-semibold">
-                      {valStr} <span className="text-[12px] font-normal text-[var(--text-muted)]">{ind.unit}</span>
+                      {formatVital(ind)}{' '}
+                      <span className="text-[12px] font-normal text-[var(--text-muted)]">{ind.unit}</span>
+                      {ind.delta !== undefined && (
+                        <span className="text-[11px] font-normal text-[var(--text-muted)] ml-1">
+                          {ind.delta > 0 ? '+' : ''}
+                          {formatNumber(ind.delta, ind.decimals)}
+                        </span>
+                      )}
                     </div>
                   </button>
                 )
@@ -183,23 +181,16 @@ export const WristApp: React.FC<WristAppProps> = ({
           </div>
         )
 
-      /* ====================================================================
-         3. DETALLE DE SIGNO
-         ==================================================================== */
       case 'detalle': {
         const lvl = getIndicatorLevel(selectedInd)
-        const valStr =
-          selectedInd.id === 'pa'
-            ? `${selectedInd.current}/${selectedInd.diastolic ?? 78}`
-            : formatEs(selectedInd.current, selectedInd.decimals)
         const pctInRange = Math.min(
           100,
           Math.max(
             0,
             ((selectedInd.current - selectedInd.chartMin) /
               (selectedInd.chartMax - selectedInd.chartMin)) *
-              100
-          )
+              100,
+          ),
         )
 
         return (
@@ -210,7 +201,7 @@ export const WristApp: React.FC<WristAppProps> = ({
                   onClick={() => setScreen('signos')}
                   className="text-[13px] text-[var(--accent)] font-medium flex items-center gap-1 min-h-[44px]"
                 >
-                  ← Volver
+                  {t.wrist.back}
                 </button>
                 <div className="flex items-center gap-1.5">
                   <LevelShape level={lvl} size={14} />
@@ -218,34 +209,42 @@ export const WristApp: React.FC<WristAppProps> = ({
                 </div>
               </div>
 
-              {/* Valor grande */}
               <div className="text-center py-2">
-                <div className="font-metric tabular-nums tracking-tight">
-                  {valStr}
-                </div>
+                <div className="font-metric tabular-nums tracking-tight">{formatVital(selectedInd)}</div>
                 <div className="text-[13px] font-medium text-[var(--text-muted)] mt-0.5">
-                  {selectedInd.unit} · Rango {selectedInd.rangeText}
+                  {selectedInd.unit} · {tf(t.wrist.range, { range: selectedInd.rangeText })}
+                  {selectedInd.delta !== undefined && (
+                    <>
+                      {' '}
+                      · Δ {selectedInd.delta > 0 ? '+' : ''}
+                      {formatNumber(selectedInd.delta, selectedInd.decimals)}
+                    </>
+                  )}
+                  {selectedInd.sqi !== undefined && <> · SQI {Math.round(selectedInd.sqi * 100)}%</>}
                 </div>
+                {selectedInd.artifact && (
+                  <div className="text-[12px] font-mono mt-1" style={{ color: 'var(--status-watch)' }}>
+                    {t.wrist.artifactNote}
+                  </div>
+                )}
               </div>
 
-              {/* Mini barra de posición en rango */}
               <div className="w-full bg-[var(--pill-bg)] h-3 rounded-full overflow-hidden border border-[var(--border)] relative">
                 <div
                   className="h-full rounded-full transition-all duration-300"
                   style={{
                     width: `${pctInRange}%`,
-                    background: lvl > 0 ? getLevelMeta(lvl).colorVar : 'var(--accent)',
+                    background: lvl > 0 ? localizedLevelMeta(lvl, t).colorVar : 'var(--accent)',
                   }}
                 />
               </div>
 
-              {/* Cuándo avisar */}
               <div
                 className="p-2.5 rounded-xl border text-[13px] leading-snug mt-2"
                 style={{ background: 'var(--surface-data)', borderColor: 'var(--border)' }}
               >
                 <strong className="block text-[12px] uppercase text-[var(--text-muted)] mb-0.5">
-                  ¿Cuándo avisar?
+                  {t.wrist.whenNotify}
                 </strong>
                 {selectedInd.whenNotify}
               </div>
@@ -256,19 +255,16 @@ export const WristApp: React.FC<WristAppProps> = ({
               className="w-full py-2.5 rounded-xl text-[14px] font-semibold cursor-pointer min-h-[44px] mt-2 transition hover:opacity-90"
               style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
             >
-              Avisar sobre {selectedInd.abbr}
+              {tf(t.wrist.notifyAbout, { abbr: selectedInd.abbr })}
             </button>
           </div>
         )
       }
 
-      /* ====================================================================
-         4. AVISAR AL EQUIPO MÉDICO
-         ==================================================================== */
       case 'avisar':
         return (
           <div className="flex flex-col h-full p-4 justify-between text-center">
-            <div className="text-[16px] font-bold">Aviso al Equipo Médico</div>
+            <div className="text-[16px] font-bold">{t.wrist.notifyTitle}</div>
 
             {notifyConfirmed ? (
               <div className="my-auto space-y-2 animate-in fade-in">
@@ -279,11 +275,9 @@ export const WristApp: React.FC<WristAppProps> = ({
                   ✓
                 </div>
                 <div className="text-[16px] font-bold" style={{ color: 'var(--accent)' }}>
-                  Aviso Enviado
+                  {t.wrist.sent}
                 </div>
-                <p className="text-[13px] text-[var(--text-muted)]">
-                  Telemetría transmitida por el enlace local a bordo.
-                </p>
+                <p className="text-[13px] text-[var(--text-muted)]">{t.wrist.sentBody}</p>
               </div>
             ) : (
               <div className="my-auto space-y-3">
@@ -291,13 +285,11 @@ export const WristApp: React.FC<WristAppProps> = ({
                   className="p-3 rounded-xl border font-mono text-[13px]"
                   style={{ background: 'var(--surface-data)', borderColor: 'var(--border)' }}
                 >
-                  A-01 · Día 42 · MET {missionClock.slice(-8)}
+                  {tf(t.wrist.profileLine, { met: missionClock.slice(-8) })}
                   <br />
-                  Preparación: <strong>{readiness}</strong>/100
+                  {tf(t.wrist.prepLine, { n: readiness })}
                 </div>
-                <p className="text-[13px] text-[var(--text-muted)]">
-                  ¿Confirmas el envío inmediato de tu telemetría al médico de vuelo?
-                </p>
+                <p className="text-[13px] text-[var(--text-muted)]">{t.wrist.confirmQ}</p>
               </div>
             )}
 
@@ -308,30 +300,29 @@ export const WristApp: React.FC<WristAppProps> = ({
                   className="w-full py-3 rounded-xl text-[15px] font-bold cursor-pointer min-h-[44px] shadow-lg transition hover:opacity-90"
                   style={{ background: 'var(--danger)', color: 'var(--on-accent)' }}
                 >
-                  Confirmar Aviso
+                  {t.wrist.confirm}
                 </button>
                 <button
                   onClick={() => setScreen('estado')}
                   className="w-full py-2 rounded-xl text-[14px] font-medium border min-h-[44px] cursor-pointer"
                   style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
                 >
-                  Cancelar
+                  {t.wrist.cancel}
                 </button>
               </div>
             )}
           </div>
         )
 
-      /* ====================================================================
-         5. RUTINA DIARIA
-         ==================================================================== */
       case 'rutina':
         return (
           <div className="flex flex-col h-full p-3 justify-between">
             <div>
-              <div className="text-[15px] font-bold mb-1">Rutinas Diarias</div>
+              <div className="text-[15px] font-bold mb-1">{t.wrist.routines}</div>
               <div className="text-[12px] text-[var(--text-muted)] mb-2 font-mono">
-                XP actual: {missions.filter((m) => m.done).reduce((acc, m) => acc + m.xp, 30)} XP
+                {tf(t.wrist.xpNow, {
+                  n: missions.filter((m) => m.done).reduce((acc, m) => acc + m.xp, 30),
+                })}
               </div>
 
               {isSafetyActive && (
@@ -343,7 +334,7 @@ export const WristApp: React.FC<WristAppProps> = ({
                     color: 'var(--text)',
                   }}
                 >
-                  <strong>Seguridad:</strong> Ejercicio pausado hasta normalizar signos.
+                  <strong>{t.wrist.safety}</strong>
                 </div>
               )}
 
@@ -353,7 +344,7 @@ export const WristApp: React.FC<WristAppProps> = ({
                   style={{ background: 'var(--surface-data)', borderColor: 'var(--border)' }}
                 >
                   <div className="text-[12px] text-[var(--text-muted)] uppercase font-semibold">
-                    Siguiente rutina
+                    {t.wrist.nextRoutine}
                   </div>
                   <div className="text-[16px] font-bold">{nextMission.title}</div>
                   <div className="text-[14px] font-mono text-[var(--accent)] font-semibold">
@@ -364,37 +355,29 @@ export const WristApp: React.FC<WristAppProps> = ({
                     className="w-full py-2.5 rounded-xl text-[14px] font-bold cursor-pointer min-h-[44px] transition hover:opacity-90"
                     style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
                   >
-                    Marcar Completada
+                    {t.wrist.markDone}
                   </button>
                 </div>
               ) : (
-                <div className="p-4 text-center text-[14px] text-[var(--text-muted)]">
-                  Todas las rutinas de hoy han sido completadas.
-                </div>
+                <div className="p-4 text-center text-[14px] text-[var(--text-muted)]">{t.wrist.allDone}</div>
               )}
             </div>
 
-            <div className="text-[12px] text-[var(--text-muted)] text-center">
-              Posponer una rutina nunca resta progreso.
-            </div>
+            <div className="text-[12px] text-[var(--text-muted)] text-center">{t.wrist.postpone}</div>
           </div>
         )
 
-      /* ====================================================================
-         6. ASISTENTE IA
-         ==================================================================== */
       case 'asistente':
         return (
           <div className="flex flex-col h-full p-3 justify-between">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[15px] font-bold">Asistente IA</span>
+                <span className="text-[15px] font-bold">{t.wrist.assistant}</span>
                 <span className="text-[11px] font-mono px-2 py-0.5 rounded border border-[var(--border)] text-[var(--text-muted)]">
-                  A bordo
+                  {t.wrist.onboard}
                 </span>
               </div>
 
-              {/* Frase de respuesta del asistente */}
               <div
                 className="p-3 rounded-xl border text-[14px] leading-relaxed mb-3"
                 style={{ background: 'var(--surface-data)', borderColor: 'var(--border)' }}
@@ -402,7 +385,6 @@ export const WristApp: React.FC<WristAppProps> = ({
                 {getWristAiText()}
               </div>
 
-              {/* Consultas rápidas táctiles */}
               <div className="space-y-1.5">
                 <button
                   onClick={() => setAiQuery('resumen24h')}
@@ -413,7 +395,7 @@ export const WristApp: React.FC<WristAppProps> = ({
                     color: aiQuery === 'resumen24h' ? 'var(--on-accent)' : 'var(--text)',
                   }}
                 >
-                  • Resumen 24h
+                  {t.wrist.summary24}
                 </button>
                 <button
                   onClick={() => setAiQuery('tendencia')}
@@ -424,7 +406,7 @@ export const WristApp: React.FC<WristAppProps> = ({
                     color: aiQuery === 'tendencia' ? 'var(--on-accent)' : 'var(--text)',
                   }}
                 >
-                  • Evaluar tendencia
+                  {t.wrist.trend}
                 </button>
                 <button
                   onClick={() => setAiQuery('protocolo')}
@@ -435,14 +417,12 @@ export const WristApp: React.FC<WristAppProps> = ({
                     color: aiQuery === 'protocolo' ? 'var(--on-accent)' : 'var(--text)',
                   }}
                 >
-                  • Protocolo activo
+                  {t.wrist.protocol}
                 </button>
               </div>
             </div>
 
-            <div className="text-[11px] text-center text-[var(--text-muted)]">
-              Apoyo a la decisión · No diagnóstica
-            </div>
+            <div className="text-[11px] text-center text-[var(--text-muted)]">{t.wrist.disclaimer}</div>
           </div>
         )
     }
@@ -450,9 +430,8 @@ export const WristApp: React.FC<WristAppProps> = ({
 
   return (
     <div className="wrist-wrapper">
-      {/* Selector de Presets de Hardware de Muñeca */}
-      <div className="mb-4 flex items-center gap-2">
-        <span className="text-[13px] font-mono text-[var(--text-muted)]">Formato reloj:</span>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-[13px] font-mono text-[var(--text-muted)]">{t.wrist.formatLabel}</span>
         <div
           className="p-1 rounded-xl flex items-center gap-1 border"
           style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
@@ -465,7 +444,7 @@ export const WristApp: React.FC<WristAppProps> = ({
               color: preset === 'square' ? 'var(--on-accent)' : 'var(--text)',
             }}
           >
-            Cuadrado (410×502)
+            {t.wrist.square}
           </button>
           <button
             onClick={() => setPreset('round')}
@@ -475,7 +454,7 @@ export const WristApp: React.FC<WristAppProps> = ({
               color: preset === 'round' ? 'var(--on-accent)' : 'var(--text)',
             }}
           >
-            Redondo (454×454)
+            {t.wrist.round}
           </button>
           <button
             onClick={() => setPreset('full')}
@@ -485,32 +464,30 @@ export const WristApp: React.FC<WristAppProps> = ({
               color: preset === 'full' ? 'var(--on-accent)' : 'var(--text)',
             }}
           >
-            Adaptable
+            {t.wrist.adaptable}
           </button>
         </div>
+        <LangSwitcher />
       </div>
 
-      {/* Contenedor del reloj con hardware frame */}
       <div
         className={
           preset === 'square'
             ? 'wrist-frame-square'
             : preset === 'round'
-            ? 'wrist-frame-round'
-            : 'w-full max-w-[440px] h-[520px] rounded-[36px] border border-[var(--border)] shadow-2xl relative overflow-hidden bg-[var(--bg)]'
+              ? 'wrist-frame-round'
+              : 'w-full max-w-[440px] h-[520px] rounded-[36px] border border-[var(--border)] shadow-2xl relative overflow-hidden bg-[var(--bg)]'
         }
       >
-        {/* Banda superior de enlace caído si desconectado */}
         {isOffline && (
           <div
             className="w-full text-center py-1 text-[12px] font-medium font-mono z-40"
             style={{ background: 'var(--danger)', color: 'var(--on-accent)' }}
           >
-            Sin enlace · último dato hace {dataAgeSeconds} s
+            {tf(t.wrist.offline, { n: dataAgeSeconds })}
           </div>
         )}
 
-        {/* Pantalla completa de alerta en escalamiento crítico */}
         {showFullscreenAlert && (
           <div
             className="absolute inset-0 z-50 flex flex-col justify-between p-5 text-center"
@@ -520,12 +497,8 @@ export const WristApp: React.FC<WristAppProps> = ({
               <div className="w-16 h-16 mx-auto rounded-2xl bg-white/20 flex items-center justify-center">
                 <LevelShape level={globalLevel} size={36} />
               </div>
-              <div className="text-[26px] font-extrabold uppercase tracking-tight">
-                {meta.globalTitle}
-              </div>
-              <p className="text-[15px] font-medium leading-snug">
-                Pulsaciones o respiración fuera del rango habitual. Haz una pausa inmediata.
-              </p>
+              <div className="text-[26px] font-extrabold uppercase tracking-tight">{meta.globalTitle}</div>
+              <p className="text-[15px] font-medium leading-snug">{t.wrist.alertBody}</p>
             </div>
             <div className="space-y-2">
               <button
@@ -535,71 +508,51 @@ export const WristApp: React.FC<WristAppProps> = ({
                 }}
                 className="w-full py-3 rounded-xl bg-white text-black text-[16px] font-bold cursor-pointer min-h-[46px] shadow-lg"
               >
-                Avisar al Médico Ahora
+                {t.wrist.notifyDoctor}
               </button>
               <button
                 onClick={() => setDismissedAlertLevel(globalLevel)}
                 className="w-full py-2 rounded-xl text-[13px] text-white/80 cursor-pointer"
               >
-                Ignorar aviso
+                {t.wrist.dismiss}
               </button>
             </div>
           </div>
         )}
 
-        {/* Pantalla activa */}
         <div className="h-[calc(100%-54px)] overflow-hidden">{renderContent()}</div>
 
-        {/* Barra inferior de navegación del reloj (≥ 44px touch targets) */}
         <nav
           className="h-[54px] border-t flex items-center justify-around px-2 z-30"
           style={{ background: 'var(--surface-solid)', borderColor: 'var(--border)' }}
         >
-          <button
-            onClick={() => setScreen('estado')}
-            aria-label="Estado"
-            className="p-2 text-[12px] font-medium cursor-pointer min-w-[44px] min-h-[44px] flex flex-col items-center justify-center"
-            style={{ color: screen === 'estado' ? 'var(--accent)' : 'var(--text-muted)' }}
-          >
-            <span className="text-[16px]">●</span>
-            <span className="text-[10px]">Estado</span>
-          </button>
-          <button
-            onClick={() => setScreen('signos')}
-            aria-label="Signos"
-            className="p-2 text-[12px] font-medium cursor-pointer min-w-[44px] min-h-[44px] flex flex-col items-center justify-center"
-            style={{ color: screen === 'signos' ? 'var(--accent)' : 'var(--text-muted)' }}
-          >
-            <span className="text-[16px]">☵</span>
-            <span className="text-[10px]">Signos</span>
-          </button>
-          <button
-            onClick={() => setScreen('avisar')}
-            aria-label="Avisar"
-            className="p-2 text-[12px] font-medium cursor-pointer min-w-[44px] min-h-[44px] flex flex-col items-center justify-center"
-            style={{ color: screen === 'avisar' ? 'var(--danger)' : 'var(--text-muted)' }}
-          >
-            <span className="text-[16px]">▲</span>
-            <span className="text-[10px]">Avisar</span>
-          </button>
-          <button
-            onClick={() => setScreen('rutina')}
-            aria-label="Rutina"
-            className="p-2 text-[12px] font-medium cursor-pointer min-w-[44px] min-h-[44px] flex flex-col items-center justify-center"
-            style={{ color: screen === 'rutina' ? 'var(--accent)' : 'var(--text-muted)' }}
-          >
-            <span className="text-[16px]">★</span>
-            <span className="text-[10px]">Rutina</span>
-          </button>
-          <button
-            onClick={() => setScreen('asistente')}
-            aria-label="Asistente"
-            className="p-2 text-[12px] font-medium cursor-pointer min-w-[44px] min-h-[44px] flex flex-col items-center justify-center"
-            style={{ color: screen === 'asistente' ? 'var(--accent)' : 'var(--text-muted)' }}
-          >
-            <span className="text-[16px]">✦</span>
-            <span className="text-[10px]">IA</span>
-          </button>
+          {(
+            [
+              ['estado', t.wrist.navEstado, '●'],
+              ['signos', t.wrist.navSignos, '☵'],
+              ['avisar', t.wrist.navAvisar, '▲'],
+              ['rutina', t.wrist.navRutina, '★'],
+              ['asistente', t.wrist.navIa, '✦'],
+            ] as const
+          ).map(([id, label, icon]) => (
+            <button
+              key={id}
+              onClick={() => setScreen(id)}
+              aria-label={label}
+              className="p-2 text-[12px] font-medium cursor-pointer min-w-[44px] min-h-[44px] flex flex-col items-center justify-center"
+              style={{
+                color:
+                  screen === id
+                    ? id === 'avisar'
+                      ? 'var(--danger)'
+                      : 'var(--accent)'
+                    : 'var(--text-muted)',
+              }}
+            >
+              <span className="text-[16px]">{icon}</span>
+              <span className="text-[10px]">{label}</span>
+            </button>
+          ))}
         </nav>
       </div>
     </div>
