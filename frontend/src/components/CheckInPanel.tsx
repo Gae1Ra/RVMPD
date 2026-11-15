@@ -60,7 +60,7 @@ export const CheckInPanel: React.FC<CheckInPanelProps> = ({ onToast }) => {
                 type="button"
                 aria-pressed={mood === m}
                 onClick={() => setMood(m)}
-                className="w-9 h-9 rounded-[10px] text-[14px] font-mono font-semibold border cursor-pointer"
+                className="touch-target w-11 h-11 rounded-[10px] text-[14px] font-mono font-semibold border cursor-pointer"
                 style={{
                   background: mood === m ? 'var(--accent)' : 'var(--pill-bg)',
                   borderColor: 'var(--border)',

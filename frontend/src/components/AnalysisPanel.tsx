@@ -59,7 +59,7 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ onToast }) => {
             value={minutes}
             onChange={(e) => setMinutes(Number(e.target.value))}
             disabled={busy}
-            className="px-2 py-1.5 rounded-[10px] text-[13px] border bg-transparent"
+            className="touch-target px-2 py-2 rounded-[10px] text-[13px] border bg-transparent"
             style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
           >
             {PERIODS.map((p) => (
@@ -72,7 +72,7 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ onToast }) => {
             type="button"
             onClick={analyze}
             disabled={busy}
-            className="px-3.5 py-1.5 rounded-[12px] text-[14px] font-semibold cursor-pointer disabled:opacity-60"
+            className="touch-target px-3.5 py-2 rounded-[12px] text-[14px] font-semibold cursor-pointer disabled:opacity-60"
             style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
           >
             {busy ? t.analysis.analyzing : t.analysis.button}

@@ -262,3 +262,170 @@ input:focus-visible,
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
+
+/* ==========================================================================
+   PHONE LAYOUT (≈375–430px) — safe areas, touch targets, no horizontal overflow
+   Keeps the existing VITALIS palette; stacks dense rows for one-handed use.
+   ========================================================================== */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.app-shell {
+  overflow-x: clip;
+}
+
+.app-frame {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+@media (max-width: 430px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .app-frame {
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    gap: 0.85rem;
+  }
+
+  /* Header: brand row, then controls stacked full-width */
+  header.vitalis-glass {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+  }
+
+  header.vitalis-glass [role='tablist'] {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  header.vitalis-glass [role='tablist'] button {
+    flex: 1;
+    min-height: 44px;
+  }
+
+  header.vitalis-glass > .flex.flex-wrap.items-center.gap-2 {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Scenario chips wrap; larger tap area */
+  header.vitalis-glass button {
+    min-height: 40px;
+  }
+
+  /* Status bar actions full-width and reachable */
+  .status-bar-actions,
+  section.vitalis-glass .flex.items-center.gap-2\.5 {
+    width: 100%;
+  }
+
+  section.vitalis-glass button {
+    min-height: 44px;
+    flex: 1 1 auto;
+  }
+
+  /* Vitals: comfortable type; avoid cramped metric numbers */
+  .font-metric {
+    font-size: 32px;
+  }
+
+  .font-heading {
+    font-size: 28px;
+  }
+
+  .font-title {
+    font-size: 22px;
+  }
+
+  /* Emergency table: card stack feel via horizontal scroll with padding */
+  .emergency-table-wrap,
+  section.vitalis-glass .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    margin-inline: -0.25rem;
+    padding-bottom: 0.25rem;
+  }
+
+  section.vitalis-glass table {
+    min-width: 320px;
+  }
+
+  /* AI / analysis / check-in buttons */
+  .medical-ai-panel button,
+  .panel-secondary-grid button,
+  .panel-secondary-grid select {
+    min-height: 44px;
+  }
+
+  .panel-secondary-grid {
+    gap: 0.85rem;
+  }
+
+  /* Sticky notify/critical affordance near thumb on long pages */
+  .mobile-sticky-actions {
+    position: sticky;
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    z-index: 30;
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 14px;
+    background: var(--surface-glass);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(20px);
+  }
+
+  /* Wrist frame scales down to viewport instead of overflowing */
+  .wrist-wrapper {
+    padding: 0.75rem 0.25rem;
+    width: 100%;
+  }
+
+  .wrist-frame-square,
+  .wrist-frame-round {
+    width: min(100%, 410px);
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 410 / 502;
+    border-width: 8px;
+    border-radius: 36px;
+  }
+
+  .wrist-frame-round {
+    aspect-ratio: 1;
+    border-radius: 50%;
+  }
+}
+
+@media (max-width: 380px) {
+  body {
+    font-size: 14px;
+  }
+
+  .font-metric {
+    font-size: 28px;
+  }
+
+  header.vitalis-glass .tracking-wide {
+    font-size: 15px;
+  }
+}

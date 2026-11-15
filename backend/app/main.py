@@ -12,6 +12,8 @@ from pydantic import BaseModel, Field
 from . import analysis, llm
 from .alerts import AlertTracker
 from .db import Database, now_iso
+from .medical_ai import insight_from_vitals, provider_status
+from .medical_ai.models import VitalsSnapshot
 from .pipeline import Pipeline
 from .simulator import CHUNK, FS, SCENARIOS, Simulator
 from .spaceweather import get_spaceweather
@@ -106,6 +108,22 @@ class CheckInIn(BaseModel):
     mood: int = Field(ge=1, le=5)
     sleep_hours: float = Field(ge=0, le=24)
     note: str = ""
+
+
+class MedicalAiIn(BaseModel):
+    """Optional body for POST /api/medical-ai/insight. Empty body uses live engine vitals."""
+
+    patient_id: str = "A-01"
+    force: bool = False  # consult AI even without anomaly (demo / manual Analyze)
+    hr: float | None = None
+    spo2: float | None = None
+    temp: float | None = None
+    resp_rate: float | None = None
+    hrv_rmssd: float | None = None
+    bp_sys: float | None = None
+    scenario: str | None = None
+    global_status: str | None = None
+    alert_titles: list[str] = Field(default_factory=list)
 
 
 async def run_simulation(app):
@@ -205,6 +223,47 @@ def latest_analysis():
 @app.get("/api/spaceweather")
 async def spaceweather():
     return await get_spaceweather()
+
+
+@app.get("/api/medical-ai/status")
+def medical_ai_status():
+    """Feature-flag and Bedrock env readiness (no AWS calls)."""
+    return provider_status()
+
+
+@app.post("/api/medical-ai/insight")
+def medical_ai_insight(body: MedicalAiIn | None = None):
+    """Structured medical AI insight (mock by default). Additive; see docs/AI_MEDICAL.md.
+
+    Uses the request body when vitals are supplied; otherwise snapshots the live
+    engine. AI is consulted only on anomaly unless `force` is true.
+    """
+    body = body or MedicalAiIn()
+    engine = app.state.engine
+    vitals = engine.vitals or {}
+
+    def _val(key: str, override: float | None):
+        if override is not None:
+            return override
+        block = vitals.get(key) or {}
+        return block.get("value")
+
+    raw_status = body.global_status or (engine.global_block or {}).get("status")
+    status = raw_status if raw_status in ("green", "amber", "red") else None
+    snap = VitalsSnapshot(
+        patient_id=body.patient_id,
+        hr=_val("hr", body.hr),
+        spo2=_val("spo2", body.spo2),
+        temp=_val("temp", body.temp),
+        resp_rate=_val("resp_rate", body.resp_rate),
+        hrv_rmssd=_val("hrv_rmssd", body.hrv_rmssd),
+        bp_sys=_val("bp_sys", body.bp_sys),
+        scenario=body.scenario or engine.sim.scenario.id,
+        global_status=status,
+        alert_titles=body.alert_titles
+        or [a.get("title", "") for a in (engine.alert_list or []) if a.get("origin") == "physiological"],
+    )
+    return insight_from_vitals(snap, force=body.force).model_dump()
 
 
 @app.websocket("/ws")

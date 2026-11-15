@@ -100,7 +100,7 @@ export const AiDecisionSupport: React.FC<AiDecisionSupportProps> = ({
                 {nextMission && (
                   <button
                     onClick={onCompleteNextMission}
-                    className="px-3.5 py-1.5 rounded-[12px] text-[14px] font-semibold cursor-pointer transition hover:opacity-90"
+                    className="touch-target px-3.5 py-2 rounded-[12px] text-[14px] font-semibold cursor-pointer transition hover:opacity-90"
                     style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
                   >
                     {tf(t.ai.startXp, { n: nextMission.xp })}
@@ -108,7 +108,7 @@ export const AiDecisionSupport: React.FC<AiDecisionSupportProps> = ({
                 )}
                 <button
                   onClick={onOpenMissionsModal}
-                  className="px-2.5 py-1.5 rounded-[12px] text-[14px] font-medium border cursor-pointer transition hover:bg-[var(--surface-hover)]"
+                  className="touch-target px-2.5 py-2 rounded-[12px] text-[14px] font-medium border cursor-pointer transition hover:bg-[var(--surface-hover)]"
                   style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
                 >
                   {t.ai.view5}
@@ -123,7 +123,7 @@ export const AiDecisionSupport: React.FC<AiDecisionSupportProps> = ({
         <div className="flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
           <button
             onClick={() => onAiQueryChange('resumen24h')}
-            className="px-3 py-1.5 rounded-[12px] text-[14px] font-medium border transition cursor-pointer"
+            className="touch-target px-3 py-2 rounded-[12px] text-[14px] font-medium border transition cursor-pointer"
             style={{
               background: aiQuery === 'resumen24h' ? 'var(--accent)' : 'var(--pill-bg)',
               borderColor: 'var(--border)',
@@ -134,7 +134,7 @@ export const AiDecisionSupport: React.FC<AiDecisionSupportProps> = ({
           </button>
           <button
             onClick={() => onAiQueryChange('tendencia')}
-            className="px-3 py-1.5 rounded-[12px] text-[14px] font-medium border transition cursor-pointer"
+            className="touch-target px-3 py-2 rounded-[12px] text-[14px] font-medium border transition cursor-pointer"
             style={{
               background: aiQuery === 'tendencia' ? 'var(--accent)' : 'var(--pill-bg)',
               borderColor: 'var(--border)',
@@ -145,7 +145,7 @@ export const AiDecisionSupport: React.FC<AiDecisionSupportProps> = ({
           </button>
           <button
             onClick={() => onAiQueryChange('protocolo')}
-            className="px-3 py-1.5 rounded-[12px] text-[14px] font-medium border transition cursor-pointer"
+            className="touch-target px-3 py-2 rounded-[12px] text-[14px] font-medium border transition cursor-pointer"
             style={{
               background: aiQuery === 'protocolo' ? 'var(--accent)' : 'var(--pill-bg)',
               borderColor: 'var(--border)',

@@ -3,6 +3,9 @@ import type {
   AnalysisReport,
   Checkin,
   HistoryResponse,
+  MedicalAiRequest,
+  MedicalAiStatus,
+  MedicalInsight,
   Scenario,
   SpaceWeather,
   Stats,
@@ -51,4 +54,7 @@ export const api = {
       if (e instanceof ApiError && e.status === 404) return null
       throw e
     }),
+  medicalAiStatus: () => request<MedicalAiStatus>('/api/medical-ai/status'),
+  medicalInsight: (body?: MedicalAiRequest) =>
+    request<MedicalInsight>('/api/medical-ai/insight', body ?? {}),
 }

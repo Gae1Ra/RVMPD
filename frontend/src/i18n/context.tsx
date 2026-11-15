@@ -84,7 +84,7 @@ export function LangSwitcher({ className = '' }: { className?: string }) {
       <button
         type="button"
         onClick={() => setLocale('es')}
-        className="px-2.5 py-1 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
+        className="touch-target px-3 py-2 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
         style={{
           background: locale === 'es' ? 'var(--accent)' : 'transparent',
           color: locale === 'es' ? 'var(--on-accent)' : 'var(--text)',
@@ -95,7 +95,7 @@ export function LangSwitcher({ className = '' }: { className?: string }) {
       <button
         type="button"
         onClick={() => setLocale('en')}
-        className="px-2.5 py-1 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
+        className="touch-target px-3 py-2 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
         style={{
           background: locale === 'en' ? 'var(--accent)' : 'transparent',
           color: locale === 'en' ? 'var(--on-accent)' : 'var(--text)',

@@ -119,3 +119,37 @@ Rules:
 - `findings` may be empty; then `summary` says that nothing unusual was found. At most 5 findings, most likely first.
 - `facts` holds 2 to 6 short observations from the stored data (trends, averages, links between measurements).
 - If the language model is not configured or fails, the backend returns the local report. It never returns an error because of the model.
+
+## Medical AI (additive appendix — proposed)
+
+Optional routes for the contained medical AI template (`docs/AI_MEDICAL.md`).
+Existing clients ignore them. The WebSocket `frame` shape is unchanged.
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| GET | `/api/medical-ai/status` | | feature flag / provider readiness (no model call) |
+| POST | `/api/medical-ai/insight` | optional vitals snapshot + `force` (bool) | structured insight below |
+
+```json
+{
+  "risk_level": "low",
+  "findings": "Plain-language clinical finding from filtered vitals.",
+  "recommended_action": "One short recommended action.",
+  "sources": ["onboard://protocols/vital-thresholds-v1.md"],
+  "provider": "mock",
+  "model": "vitalis-mock-v1",
+  "invoked": true,
+  "anomaly_detected": true,
+  "patient_id": "A-01",
+  "disclaimer": "Decision support, not a medical diagnosis."
+}
+```
+
+Rules:
+
+- `risk_level` is one of `low`, `medium`, `high` (maps to guide BAJO / MEDIO / ALTO in the UI).
+- `provider` is `mock`, `bedrock`, or `disabled` (feature flag off).
+- `invoked` is true only when a provider actually ran. Nominal vitals skip the model unless `force` is true (cost guardrail).
+- `sources` lists protocol / KB citation URIs when available; may be empty.
+- Request body fields (`hr`, `spo2`, `temp`, …) are optional; omitted fields are taken from the live engine snapshot.
+- This path is separate from `/api/analysis` (window trends). Both may coexist.
