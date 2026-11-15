@@ -23,12 +23,13 @@ try:
 except ImportError:
     pass
 
-# Anthropic API id; Bedrock Mantle uses anthropic.claude-haiku-5-5 when VITALIS_MODEL is unset.
-# Bedrock Mantle accepts anthropic.claude-haiku-5-5 in-region (AWS model card, bedrock-mantle endpoint).
-# bedrock-runtime (non-Mantle) in us-east-2 is inference-profile-only: us.anthropic.claude-haiku-5-5 —
-# not verified live in this repo; override via VITALIS_MODEL if your account needs the us. prefix.
+# Anthropic API id; Bedrock defaults depend on endpoint (see bedrock_endpoint / default_bedrock_model).
+# AWS model card: foundation id anthropic.claude-haiku-5-5; bedrock-runtime in us-east-2 is
+# inference-profile-only → us.anthropic.claude-haiku-5-5. Mantle uses the foundation id.
+# Live success of either id is not verified in this repo — smoke tries both and reports.
 DEFAULT_MODEL = "claude-haiku-5-5"
 DEFAULT_BEDROCK_MODEL = f"anthropic.{DEFAULT_MODEL}"
+DEFAULT_BEDROCK_RUNTIME_PROFILE = f"us.{DEFAULT_BEDROCK_MODEL}"
 MAX_TOKENS = 1500
 TIMEOUT_S = 20.0
 DEFAULT_SPEND_CAP_USD = 0.50
@@ -37,6 +38,10 @@ DEFAULT_OUTPUT_USD_PER_MTOK = 0.50
 MIN_CALL_INTERVAL_S = 30.0
 MAX_SESSION_CALLS = 100
 HRP_NOTES_PATH = Path(__file__).resolve().parent / "context" / "hrp_notes.md"
+INVALID_TOKEN_MSG = (
+    "token inválido: revisa que esté completo, que no haya vencido y que corresponda a la región"
+)
+EXPIRED_TOKEN_MSG = "credencial vencida, genera una nueva"
 
 _session_calls = 0
 _last_call_monotonic = 0.0
@@ -191,12 +196,25 @@ def reset_session_limits() -> None:
     _last_call_monotonic = 0.0
 
 
+def bedrock_endpoint() -> str:
+    """`runtime` (default, bedrock-runtime) or `mantle` (AnthropicBedrockMantle)."""
+    raw = (os.environ.get("VITALIS_BEDROCK_ENDPOINT") or "runtime").strip().lower()
+    return "mantle" if raw == "mantle" else "runtime"
+
+
+def default_bedrock_model() -> str:
+    """Model id when VITALIS_MODEL is unset. Runtime defaults to the US geo inference profile."""
+    if bedrock_endpoint() == "mantle":
+        return DEFAULT_BEDROCK_MODEL
+    return DEFAULT_BEDROCK_RUNTIME_PROFILE
+
+
 def configured_provider() -> tuple[str, str | None, bool]:
     """Return (provider, model_id_or_None, configured). No network."""
     if os.environ.get("ANTHROPIC_API_KEY"):
         return "anthropic", os.environ.get("VITALIS_MODEL", DEFAULT_MODEL), True
     if os.environ.get("VITALIS_USE_BEDROCK") == "1":
-        return "bedrock", os.environ.get("VITALIS_MODEL", DEFAULT_BEDROCK_MODEL), True
+        return "bedrock", os.environ.get("VITALIS_MODEL", default_bedrock_model()), True
     return "local", None, False
 
 
@@ -220,9 +238,12 @@ def make_client():
         return client, os.environ.get("VITALIS_MODEL", DEFAULT_MODEL)
     if os.environ.get("VITALIS_USE_BEDROCK") == "1":
         region = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-east-2"
-        # AnthropicBedrockMantle reads AWS_BEARER_TOKEN_BEDROCK (short-lived Bedrock API key).
-        client = anthropic.AnthropicBedrockMantle(aws_region=region, timeout=TIMEOUT_S, max_retries=0)
-        return client, os.environ.get("VITALIS_MODEL", DEFAULT_BEDROCK_MODEL)
+        # Both clients read AWS_BEARER_TOKEN_BEDROCK (short-lived Bedrock API key). No IAM keys.
+        if bedrock_endpoint() == "mantle":
+            client = anthropic.AnthropicBedrockMantle(aws_region=region, timeout=TIMEOUT_S, max_retries=0)
+        else:
+            client = anthropic.AnthropicBedrock(aws_region=region, timeout=TIMEOUT_S, max_retries=0)
+        return client, os.environ.get("VITALIS_MODEL", default_bedrock_model())
     return None
 
 
@@ -250,9 +271,12 @@ def _classify_failure(exc: BaseException) -> str:
     text = f"{type(exc).__name__}: {exc}".lower()
     if isinstance(exc, TimeoutError) or type(exc).__name__ in ("APITimeoutError", "TimeoutException"):
         return "timeout"
-    if any(k in text for k in ("expired", "unauthorized", "401", "invalid api key", "invalid_api_key",
-                               "credential", "bearer", "forbidden", "403")):
+    # 401 / invalid bearer ≠ necessarily expired (truncated key, wrong region, wrong endpoint).
+    if "expired" in text and any(k in text for k in ("token", "credential", "key", "bearer")):
         return "expired_credential"
+    if any(k in text for k in ("401", "invalid bearer", "invalid api key", "invalid_api_key",
+                               "unauthorized", "authentication", "forbidden", "403")):
+        return "invalid_credential"
     if any(k in text for k in ("not enabled", "not authorized for model", "access denied", "model not found",
                                "validationexception", "isn't supported", "not available", "unknown model")):
         return "model_not_enabled"
@@ -263,6 +287,14 @@ def _classify_failure(exc: BaseException) -> str:
                                "invalid response")):
         return "invalid_response"
     return "model_error"
+
+
+def _fallback_detail(reason: str) -> str | None:
+    if reason == "invalid_credential":
+        return INVALID_TOKEN_MSG
+    if reason == "expired_credential":
+        return EXPIRED_TOKEN_MSG
+    return None
 
 
 def _few_shot_block() -> str:
@@ -352,12 +384,10 @@ def refine(stats, local, db=None, lang: str = "en"):
     except Exception as e:  # the contract: a model failure never becomes an API error
         latency_ms = int((time.monotonic() - started) * 1000)
         reason = _classify_failure(e)
-        if reason == "expired_credential":
-            log.warning(
-                "provider=%s latency_ms=%s fallback=%s detail=%s",
-                provider, latency_ms, reason,
-                "credencial vencida, genera una nueva",
-            )
+        detail = _fallback_detail(reason)
+        if detail:
+            log.warning("provider=%s latency_ms=%s fallback=%s detail=%s",
+                        provider, latency_ms, reason, detail)
         else:
             log.warning("provider=%s latency_ms=%s fallback=%s error_type=%s",
                         provider, latency_ms, reason, type(e).__name__)

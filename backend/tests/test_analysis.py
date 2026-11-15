@@ -191,31 +191,64 @@ def test_bedrock_path_marks_llm_with_default_model(monkeypatch, db):
     monkeypatch.setenv("VITALIS_USE_BEDROCK", "1")
     monkeypatch.setenv("AWS_REGION", "us-east-2")
     monkeypatch.delenv("VITALIS_MODEL", raising=False)
+    monkeypatch.delenv("VITALIS_BEDROCK_ENDPOINT", raising=False)
     capture = {}
-    monkeypatch.setattr(llm, "make_client", lambda: (_ok_client(capture=capture), llm.DEFAULT_BEDROCK_MODEL))
+    default_model = llm.default_bedrock_model()
+    monkeypatch.setattr(llm, "make_client", lambda: (_ok_client(capture=capture), default_model))
     fill(db)
     stats = analysis.window_stats(db, 10)
     report = llm.refine(stats, analysis.local_report(stats), db=db)
     assert report["engine"] == "llm"
-    assert report["model"] == "anthropic.claude-haiku-5-5"
+    assert report["model"] == "us.anthropic.claude-haiku-5-5"
     assert capture["max_tokens"] <= 1500
     assert capture["output_config"]["effort"] == "low"
 
 
-@pytest.mark.parametrize("exc", [
-    TimeoutError("too slow"),
-    RuntimeError("ExpiredToken: credential expired"),
-    RuntimeError("ValidationException: model is not enabled"),
-    RuntimeError("wrong region endpoint mismatch"),
-    ValueError("invalid response / pydantic validation error"),
-    RuntimeError("permissions denied by policy"),
+def test_make_client_defaults_to_runtime_bedrock(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("VITALIS_USE_BEDROCK", "1")
+    monkeypatch.setenv("AWS_REGION", "us-east-2")
+    monkeypatch.setenv("AWS_BEARER_TOKEN_BEDROCK", "test-token-not-real")
+    monkeypatch.delenv("VITALIS_MODEL", raising=False)
+    monkeypatch.delenv("VITALIS_BEDROCK_ENDPOINT", raising=False)
+    client, model = llm.make_client()
+    assert isinstance(client, __import__("anthropic").AnthropicBedrock)
+    assert model == "us.anthropic.claude-haiku-5-5"
+
+
+def test_make_client_mantle_when_endpoint_set(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("VITALIS_USE_BEDROCK", "1")
+    monkeypatch.setenv("VITALIS_BEDROCK_ENDPOINT", "mantle")
+    monkeypatch.setenv("AWS_REGION", "us-east-2")
+    monkeypatch.setenv("AWS_BEARER_TOKEN_BEDROCK", "test-token-not-real")
+    monkeypatch.delenv("VITALIS_MODEL", raising=False)
+    client, model = llm.make_client()
+    assert isinstance(client, __import__("anthropic").AnthropicBedrockMantle)
+    assert model == "anthropic.claude-haiku-5-5"
+
+
+@pytest.mark.parametrize("exc,reason", [
+    (TimeoutError("too slow"), "timeout"),
+    (RuntimeError("ExpiredToken: credential expired"), "expired_credential"),
+    (RuntimeError("Error code: 401 - Invalid bearer token"), "invalid_credential"),
+    (RuntimeError("ValidationException: model is not enabled"), "model_not_enabled"),
+    (RuntimeError("wrong region endpoint mismatch"), "wrong_region"),
+    (ValueError("invalid response / pydantic validation error"), "invalid_response"),
+    (RuntimeError("permissions denied by policy"), "model_error"),
 ])
-def test_model_failures_fall_back_to_local(monkeypatch, db, exc):
+def test_model_failures_fall_back_to_local(monkeypatch, db, exc, reason, caplog):
     monkeypatch.setattr(llm, "make_client", lambda: (_ok_client(raise_exc=exc), "test-model"))
     fill(db)
     stats = analysis.window_stats(db, 10)
     local = analysis.local_report(stats)
-    assert llm.refine(stats, local, db=db) == local
+    with caplog.at_level("WARNING", logger="vitalis.llm"):
+        assert llm.refine(stats, local, db=db) == local
+    assert any(f"fallback={reason}" in r.message for r in caplog.records)
+    if reason == "invalid_credential":
+        assert any(llm.INVALID_TOKEN_MSG in r.message for r in caplog.records)
+    if reason == "expired_credential":
+        assert any(llm.EXPIRED_TOKEN_MSG in r.message for r in caplog.records)
 
 
 def test_spend_cap_skips_model(monkeypatch, db):
@@ -272,9 +305,10 @@ def test_analysis_engine_route(client, monkeypatch):
     assert body["model"] is None
     assert "spent_usd" in body and "cap_usd" in body
     monkeypatch.setenv("VITALIS_USE_BEDROCK", "1")
+    monkeypatch.delenv("VITALIS_BEDROCK_ENDPOINT", raising=False)
     body = client.get("/api/analysis/engine").json()
     assert body["provider"] == "bedrock" and body["configured"] is True
-    assert body["model"] == "anthropic.claude-haiku-5-5"
+    assert body["model"] == "us.anthropic.claude-haiku-5-5"
 
 
 def test_analysis_lang_passed_to_prompt(monkeypatch, client, db):
