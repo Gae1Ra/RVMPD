@@ -76,4 +76,23 @@ If the model is not configured or fails, the on-board engine answers. The model 
 
 The data has no real sensor behind it yet. A simulator produces the signals, behind the same interface a Bluetooth or serial reader would use.
 
-More detail: [docs/PLAN.md](docs/PLAN.md) and [docs/CONTRACT.md](docs/CONTRACT.md).
+## Medical AI template (Bedrock-ready, mock by default)
+
+A second, **optional** path returns a structured insight (risk level, findings, recommended action, protocol sources) after the clinical anomaly filter. It is **off by default** and needs **no AWS credentials** for local/demo — the mock provider works offline.
+
+| Variable | Effect |
+|---|---|
+| `VITALIS_MEDICAL_AI=1` | Enable the medical AI provider path |
+| `VITALIS_MEDICAL_AI_PROVIDER` | `mock` (default) or `bedrock` |
+| `AWS_REGION` / `AWS_DEFAULT_REGION` | Bedrock region (default `us-east-1`) |
+| `VITALIS_KNOWLEDGE_BASE_ID` or `KNOWLEDGE_BASE_ID` | Bedrock Knowledge Base id |
+| `VITALIS_GUARDRAIL_ID` or `GUARDRAIL_ID` | Bedrock Guardrail id |
+| `VITALIS_GUARDRAIL_VERSION` | Guardrail version (default `1`) |
+| `VITALIS_MODEL_ARN` or `MODEL_ARN` | Full model ARN (optional) |
+| `VITALIS_BEDROCK_MODEL` | Short model id if ARN not set (default `amazon.nova-pro-v1:0`) |
+
+Enable Bedrock later with `pip install boto3`, the env vars above, and normal AWS credentials. Prefer serverless Claude / Nova on Bedrock with S3 Vectors Knowledge Bases — avoid dedicated GPU endpoints for hackathon budgets. Other hackathon options (Ollama, Colab MedGemma, Gemini, Groq) can implement the same provider interface; see [docs/AI_MEDICAL.md](docs/AI_MEDICAL.md).
+
+UI: **Medical AI · Insight** panel (ES/EN). Routes: `GET /api/medical-ai/status`, `POST /api/medical-ai/insight` (additive CONTRACT appendix).
+
+More detail: [docs/PLAN.md](docs/PLAN.md), [docs/CONTRACT.md](docs/CONTRACT.md), and [docs/AI_MEDICAL.md](docs/AI_MEDICAL.md).

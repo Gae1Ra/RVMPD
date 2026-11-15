@@ -35,7 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="vitalis-glass px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center border shrink-0 overflow-hidden"
           style={{ borderColor: 'var(--border)', background: 'var(--pill-bg)' }}
@@ -50,10 +50,10 @@ export const Header: React.FC<HeaderProps> = ({
             }}
           />
         </div>
-        <div className="flex items-center gap-2 text-[16px] font-bold tracking-tight">
+        <div className="flex items-center gap-2 text-[16px] font-bold tracking-tight min-w-0">
           <span className="tracking-wide">{t.brand.name}</span>
           <span style={{ color: 'var(--text-muted)' }}>·</span>
-          <span className="font-mono text-[14px]" style={{ color: 'var(--text-muted)' }}>
+          <span className="font-mono text-[14px] truncate" style={{ color: 'var(--text-muted)' }}>
             {t.brand.crewDay}
           </span>
         </div>
@@ -62,14 +62,14 @@ export const Header: React.FC<HeaderProps> = ({
       <div
         role="tablist"
         aria-label={t.roles.tablist}
-        className="p-1 rounded-[12px] flex items-center gap-1 border"
+        className="p-1 rounded-[12px] flex items-center gap-1 border w-full sm:w-auto"
         style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)' }}
       >
         <button
           role="tab"
           aria-selected={role === 'medico'}
           onClick={() => onRoleChange('medico')}
-          className="px-4 py-1.5 rounded-[10px] text-[14px] font-semibold transition cursor-pointer"
+          className="touch-target flex-1 sm:flex-none px-4 py-2 rounded-[10px] text-[14px] font-semibold transition cursor-pointer"
           style={{
             background: role === 'medico' ? 'var(--accent)' : 'transparent',
             color: role === 'medico' ? 'var(--on-accent)' : 'var(--text)',
@@ -81,7 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
           role="tab"
           aria-selected={role === 'astronauta'}
           onClick={() => onRoleChange('astronauta')}
-          className="px-4 py-1.5 rounded-[10px] text-[14px] font-semibold transition cursor-pointer"
+          className="touch-target flex-1 sm:flex-none px-4 py-2 rounded-[10px] text-[14px] font-semibold transition cursor-pointer"
           style={{
             background: role === 'astronauta' ? 'var(--accent)' : 'transparent',
             color: role === 'astronauta' ? 'var(--on-accent)' : 'var(--text)',
@@ -91,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
         <div className="font-mono tabular-nums text-[14px] flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
           <span className="font-label text-[12px]">{linkLabel}</span>
           <span>·</span>
@@ -111,7 +111,7 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <button
             onClick={() => onSurfaceChange('panel')}
-            className="px-2.5 py-1 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
+            className="touch-target px-3 py-2 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
             style={{
               background: surface === 'panel' ? 'var(--accent)' : 'transparent',
               color: surface === 'panel' ? 'var(--on-accent)' : 'var(--text)',
@@ -121,7 +121,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSurfaceChange('wrist')}
-            className="px-2.5 py-1 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
+            className="touch-target px-3 py-2 rounded-[8px] text-[13px] font-medium cursor-pointer transition"
             style={{
               background: surface === 'wrist' ? 'var(--accent)' : 'transparent',
               color: surface === 'wrist' ? 'var(--on-accent)' : 'var(--text)',
@@ -135,7 +135,7 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={onToggleTheme}
           aria-label={t.theme.toggle}
           title={t.theme.title}
-          className="w-10 h-10 rounded-[12px] border flex items-center justify-center transition cursor-pointer hover:bg-[var(--surface-hover)]"
+          className="touch-target w-11 h-11 rounded-[12px] border flex items-center justify-center transition cursor-pointer hover:bg-[var(--surface-hover)]"
           style={{
             background: 'var(--pill-bg)',
             borderColor: 'var(--border)',

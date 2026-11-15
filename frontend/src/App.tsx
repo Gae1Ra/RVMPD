@@ -28,6 +28,7 @@ import { WristApp } from './components/WristApp'
 import { CheckInPanel } from './components/CheckInPanel'
 import { SpaceWeatherPanel } from './components/SpaceWeatherPanel'
 import { AnalysisPanel } from './components/AnalysisPanel'
+import { MedicalAiPanel } from './components/MedicalAiPanel'
 import { useTelemetry } from './hooks/useTelemetry'
 import {
   applyFrameToIndicators,
@@ -257,8 +258,8 @@ export default function App() {
       : 'off'
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-4 min-h-screen">
+    <div className="min-h-screen app-shell">
+      <div className="app-frame max-w-[1280px] mx-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-4 min-h-screen">
         <Header
           role={role}
           onRoleChange={setRole}
@@ -325,7 +326,9 @@ export default function App() {
               />
             </section>
 
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            <MedicalAiPanel frame={frame} onToast={showToast} />
+
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-3.5 panel-secondary-grid">
               <CheckInPanel onToast={showToast} />
               <SpaceWeatherPanel />
               <AnalysisPanel onToast={showToast} />

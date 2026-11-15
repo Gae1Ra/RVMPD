@@ -79,10 +79,10 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5">
+      <div className="status-bar-actions flex items-center gap-2.5 w-full sm:w-auto">
         <button
           onClick={onExportCsv}
-          className="px-3.5 py-2 rounded-[12px] text-[14px] font-medium border transition cursor-pointer hover:bg-[var(--surface-hover)]"
+          className="touch-target flex-1 sm:flex-none px-3.5 py-2 rounded-[12px] text-[14px] font-medium border transition cursor-pointer hover:bg-[var(--surface-hover)]"
           style={{ background: 'var(--pill-bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
         >
           {t.status.exportCsv}
@@ -90,7 +90,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 
         <button
           onClick={onOpenNotifyModal}
-          className="px-4 py-2 rounded-[12px] text-[14px] font-semibold border transition cursor-pointer"
+          className="touch-target flex-1 sm:flex-none px-4 py-2 rounded-[12px] text-[14px] font-semibold border transition cursor-pointer"
           style={{
             background: isAlertActive ? 'var(--danger)' : 'var(--pill-bg)',
             borderColor: isAlertActive ? 'var(--danger)' : 'var(--border)',

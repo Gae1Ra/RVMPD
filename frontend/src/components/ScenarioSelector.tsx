@@ -44,7 +44,7 @@ export const ScenarioSelector: React.FC<ScenarioSelectorProps> = ({ current, onS
           disabled={busy}
           title={s.description}
           onClick={() => choose(s.id)}
-          className="px-2.5 py-1.5 rounded-[10px] text-[12px] font-medium border transition cursor-pointer disabled:opacity-60"
+          className="touch-target px-3 py-2 rounded-[10px] text-[12px] font-medium border transition cursor-pointer disabled:opacity-60"
           style={{
             background: current === s.id ? 'var(--accent)' : 'var(--pill-bg)',
             borderColor: current === s.id ? 'var(--accent)' : 'var(--border)',
