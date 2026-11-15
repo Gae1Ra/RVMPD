@@ -152,4 +152,4 @@ Rules:
 - `invoked` is true only when a provider actually ran. Nominal vitals skip the model unless `force` is true (cost guardrail).
 - `sources` lists protocol / KB citation URIs when available; may be empty.
 - Request body fields (`hr`, `spo2`, `temp`, …) are optional; omitted fields are taken from the live engine snapshot.
-- This path is separate from `/api/analysis` (window trends). Both may coexist.
+- This path stays separate from `/api/analysis` (window trends) by design — see `DECISIONES.md` §9. Both coexist; do not fold insight fields into the analysis report.

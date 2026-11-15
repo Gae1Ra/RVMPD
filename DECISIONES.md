@@ -38,7 +38,7 @@ En conformidad con la regla 6 de la sección 13 de `SPEC.md` (*"Si algo es ambig
 ### 9. Plantilla de IA médica (Bedrock) aditiva y con flag
 * **Decisión:** Se añadió `backend/app/medical_ai/` con proveedor `mock` por defecto y interfaz Bedrock (`retrieve_and_generate` + KB + Guardrails) detrás de `VITALIS_MEDICAL_AI`. Rutas aditivas `GET /api/medical-ai/status` y `POST /api/medical-ai/insight`. El filtro clínico solo invoca IA ante anomalía (o `force=true`).
 * **Motivo:** Integrar la guía Bedrock/Wi-Fi en este FastAPI + WebSocket sin romper el CONTRACT existente ni exigir AWS/GPU en demos. Ver `docs/AI_MEDICAL.md` y el apéndice aditivo de `docs/CONTRACT.md`.
-* **Pregunta abierta al equipo:** ¿consolidar este insight dentro de `/api/analysis` (campo opcional) o mantener la ruta separada? Por ahora se mantiene separada para no alterar clientes del informe local.
+* **Ruta separada de `/api/analysis` (decidido):** se mantiene `POST /api/medical-ai/insight` aparte del informe de tendencias en `/api/analysis`. Motivo práctico: aislar el feature flag, no mezclar contratos de respuesta, y degradar con seguridad si Bedrock falla sin afectar el motor local de análisis.
 
 ### 10. UI móvil por CSS (sin rediseño de marca)
 * **Decisión:** Refinamientos `@media (max-width: 430px)` / `380px` en `styles.css`: safe-area, `touch-target` ≥44px, header/status apilados, wrist frame `min(100%, …)`, sin cambiar la paleta VITALIS.
