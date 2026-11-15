@@ -38,7 +38,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --port 8000
 ```
 
-Optional Bedrock setup (smoke test + spend cap) is below under **Usar AWS Bedrock**.
+Optional Bedrock setup (smoke test + spend cap) is below under **Using AWS Bedrock**.
 
 ### 2. Frontend (terminal B)
 
@@ -114,13 +114,13 @@ A language model can write the report from the same numbers. This is optional an
 
 If the model is not configured, fails, hits the spend cap, or is rate-limited, the on-board engine answers. The model only receives aggregated statistics, never raw readings. Copy `backend/.env.example` to `backend/.env` for local secrets (never commit `.env`).
 
-### Usar AWS Bedrock (principiantes, paso a paso)
+### Using AWS Bedrock (beginners, step by step)
 
-Cuenta compartida de hackathon — **no** crear usuarios IAM. Usa una **API key de corta duración** (máx. 12 h) en la consola Bedrock, región **us-east-2**.
+Shared hackathon account — do **not** create IAM users. Use a **short-lived API key** (max 12 h) from the Bedrock console, region **us-east-2**.
 
-Haz esto **en orden**:
+Do this **in order**:
 
-1. **Virtualenv** (desde `backend/`):
+1. **Virtualenv** (from `backend/`):
 
    ```
    cd backend
@@ -131,13 +131,13 @@ Haz esto **en orden**:
    - Windows (cmd): `.venv\Scripts\activate.bat`
    - Windows (PowerShell): `.venv\Scripts\Activate.ps1`
 
-2. **Instalar dependencias:**
+2. **Install dependencies:**
 
    ```
    pip install -r requirements.txt
    ```
 
-3. **Copiar el ejemplo de entorno:**
+3. **Copy the environment example:**
 
    ```
    # macOS / Linux
@@ -146,42 +146,42 @@ Haz esto **en orden**:
    copy .env.example .env
    ```
 
-4. **Rellenar `backend/.env`** (nunca subas este archivo; ya está en `.gitignore`):
+4. **Fill in `backend/.env`** (never commit this file; it is already in `.gitignore`):
 
-   | Variable | Valor típico |
+   | Variable | Typical value |
    |---|---|
    | `VITALIS_USE_BEDROCK` | `1` |
-   | `AWS_REGION` | `us-east-2` (debe coincidir con la región de la clave) |
-   | `AWS_BEARER_TOKEN_BEDROCK` | tu API key corta de Bedrock (no access keys IAM) |
-   | `VITALIS_BEDROCK_ENDPOINT` | `runtime` (default, `bedrock-runtime`) o `mantle` |
-   | `VITALIS_MODEL` | runtime: `us.anthropic.claude-sonnet-4-6`; Mantle: `anthropic.claude-sonnet-4-6` (configurable; ids documentados por AWS) |
-   | `VITALIS_SPEND_CAP_USD` | `0.50` al empezar (súbelo después; ver paso 8) |
+   | `AWS_REGION` | `us-east-2` (must match the key's region) |
+   | `AWS_BEARER_TOKEN_BEDROCK` | your short-lived Bedrock API key (not IAM access keys) |
+   | `VITALIS_BEDROCK_ENDPOINT` | `runtime` (default, `bedrock-runtime`) or `mantle` |
+   | `VITALIS_MODEL` | runtime: `us.anthropic.claude-sonnet-4-6`; Mantle: `anthropic.claude-sonnet-4-6` (configurable; ids documented by AWS) |
+   | `VITALIS_SPEND_CAP_USD` | `0.50` to start (raise it later; see step 8) |
 
-5. **Smoke test** (llamada barata; necesita la clave en `.env`):
+5. **Smoke test** (cheap call; needs the key in `.env`):
 
    ```
    cd backend
    python scripts/bedrock_smoke_test.py
    ```
 
-   Debe imprimir `OK …` y, si probó varios ids, `WORKING_MODEL=…`. Un **401** no significa siempre “vencida”: revisa que el token esté completo, no haya vencido y corresponda a la región. Si falla por vencida, regenera (≤12 h) y reintenta.
+   It should print `OK …` and, if it tried several ids, `WORKING_MODEL=…`. A **401** does not always mean “expired”: check that the token is complete, not expired, and matches the region. If it failed because it expired, regenerate (≤12 h) and retry.
 
-6. **Arrancar el API:**
+6. **Start the API:**
 
    ```
    uvicorn app.main:app --port 8000
    ```
 
-7. **Probar en el navegador:** abre [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger).  
-   También puedes esperar ~30 s (el simulador guarda ~1 lectura/s; hace falta `MIN_ROWS=30`) y correr:
+7. **Try it in the browser:** open [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger).  
+   You can also wait ~30 s (the simulator stores ~1 reading/s; `MIN_ROWS=30` is required) and run:
 
    ```
    python scripts/try_analysis.py
    ```
 
-   Eso hace `POST /api/analysis` + `GET /api/analysis/engine` e imprime engine, model, summary, findings, spent y cap. Si `engine` es `local` con Bedrock configurado, mira en los logs de uvicorn el patrón `fallback=<código>` (p. ej. `invalid_credential`, `expired_credential`, `model_not_enabled`, `spend_cap`).
+   That does `POST /api/analysis` + `GET /api/analysis/engine` and prints engine, model, summary, findings, spent, and cap. If `engine` is `local` with Bedrock configured, check the uvicorn logs for the pattern `fallback=<code>` (e.g. `invalid_credential`, `expired_credential`, `model_not_enabled`, `spend_cap`).
 
-8. **Subir el tope de gasto** solo cuando quieras: edita `VITALIS_SPEND_CAP_USD` en `.env` (presupuesto compartido ~$10) y reinicia uvicorn. También hay 1 llamada LLM / 30 s y máx. 100 por proceso.
+8. **Raise the spend cap** only when you want to: edit `VITALIS_SPEND_CAP_USD` in `.env` (shared budget ~$10) and restart uvicorn. There is also a limit of 1 LLM call / 30 s and max 100 per process.
 
 The data has no real sensor behind it yet. A simulator produces the signals, behind the same interface a Bluetooth or serial reader would use.
 
