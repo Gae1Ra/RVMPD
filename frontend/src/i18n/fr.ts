@@ -16,6 +16,26 @@ export const fr: Dictionary = {
     wrist: 'Poignet',
     title: 'Basculer entre Panneau unifié (1280px) et Montre de poignet',
   },
+  dataSource: {
+    label: 'Source de données',
+    simulator: 'Simulateur',
+    galaxyWatch: 'Démo Galaxy Watch',
+  },
+  watchDemo: {
+    aria: 'Démo Galaxy Watch · VITALIS',
+    kicker: 'Samsung Galaxy Watch · pont téléphone',
+    tagline: 'Uniquement ce que la montre peut typiquement exposer en démo réelle.',
+    connected: 'Montre synchronisée',
+    disconnected: 'Pas de sync',
+    lastSync: 'Dernière sync {time}',
+    metricsTitle: 'Signes de la montre',
+    fromWatch: 'Depuis la montre',
+    skinTemp: 'Temp. cutanée',
+    spo2Waiting: 'SpO₂ occasionnelle — en attente d’un échantillon',
+    hiddenNote:
+      'Pas d’ECG/PPG en direct, ni tension ni respiration : la montre ne les expose pas aux tiers.',
+    disclaimer: 'Aide à la décision · Pas un diagnostic médical',
+  },
   link: {
     live: 'En direct',
     demo: 'Démo locale',

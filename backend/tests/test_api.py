@@ -21,7 +21,14 @@ def test_health(client):
 
 def test_scenarios_listed(client):
     ids = [s["id"] for s in client.get("/api/scenarios").json()]
-    assert ids == ["nominal", "solar_particle_event", "hypoxia", "loose_electrode", "fatigue"]
+    assert ids == [
+        "nominal",
+        "solar_particle_event",
+        "hypoxia",
+        "loose_electrode",
+        "fatigue",
+        "galaxy_watch",
+    ]
 
 
 def test_scenario_switch_and_unknown(client):
@@ -48,7 +55,8 @@ def test_spaceweather_shape(client):
 def test_websocket_frame_matches_contract(client):
     with client.websocket_connect("/ws") as ws:
         frame = ws.receive_json()
-    assert set(frame) == FRAME_KEYS
+    # Additive keys (e.g. source/watch in galaxy_watch) are allowed.
+    assert FRAME_KEYS <= set(frame)
     assert frame["type"] == "frame"
     assert frame["wave"]["fs"] == 250
     assert all(len(frame["wave"][c]) == 50 for c in ("ecg", "ppg", "resp"))

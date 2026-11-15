@@ -10,6 +10,11 @@ export const MOCK_SCENARIOS: Scenario[] = [
   { id: 'hypoxia', name: 'Hypoxia', description: 'Blood oxygen falls while breathing speeds up.' },
   { id: 'loose_electrode', name: 'Loose electrode', description: 'A sensor artifact corrupts the heart signal.' },
   { id: 'fatigue', name: 'Fatigue', description: 'Heart rate variability drops as fatigue builds.' },
+  {
+    id: 'galaxy_watch',
+    name: 'Galaxy Watch demo',
+    description: 'Watch-like vitals only: HR, occasional SpO₂, skin temp — no ECG/PPG waveforms.',
+  },
 ]
 
 const FS = 250
@@ -102,6 +107,11 @@ const EFFECTS: Record<string, Effect> = {
       ],
     },
   },
+  galaxy_watch: {
+    target: { hr: 70, hrv_rmssd: 44, spo2: 97.5, temp: 36.5 },
+    status: {},
+    lowSqi: ['resp_rate', 'bp_sys'],
+  },
 }
 
 const P_ADJ: Record<Status, number> = { green: 0.8, amber: 0.012, red: 0.0004 }
@@ -154,6 +164,10 @@ export function createMock() {
   }
 
   function waves() {
+    if (scenario === 'galaxy_watch') {
+      const zeros = Array.from({ length: SAMPLES_PER_FRAME }, () => 0)
+      return { fs: FS, ecg: zeros, ppg: zeros, resp: zeros }
+    }
     const hr = vitals.hr.value
     const respHz = vitals.resp_rate.value / 60
     const fx = EFFECTS[scenario]
@@ -181,6 +195,13 @@ export function createMock() {
     if (whole !== lastWholeSecond) {
       lastWholeSecond = whole
       vitals = computeVitals(fx)
+      if (scenario === 'galaxy_watch') {
+        // Occasional SpO₂ window (~4 s every ~25 s); otherwise untrusted.
+        const spo2Ok = whole % 25 < 4
+        vitals.spo2 = { ...vitals.spo2, sqi: spo2Ok ? 0.9 : 0.2 }
+        vitals.resp_rate = { ...vitals.resp_rate, sqi: 0.15 }
+        vitals.bp_sys = { ...vitals.bp_sys, sqi: 0.15 }
+      }
     }
 
     const settled = secondsIn() > RAMP_SECONDS * 0.6
@@ -201,7 +222,7 @@ export function createMock() {
     }
     const meanSqi = METRIC_KEYS.reduce((sum, k) => sum + vitals[k].sqi, 0) / METRIC_KEYS.length
 
-    return {
+    const frame: Frame = {
       type: 'frame',
       t: Number(t.toFixed(2)),
       scenario,
@@ -211,6 +232,24 @@ export function createMock() {
       global: { status: worst, confidence: fx.lowSqi && settled ? 0.62 : 0.95, sqi: Number(meanSqi.toFixed(2)), link: 'ok' },
       alerts,
     }
+    if (scenario === 'galaxy_watch') {
+      const spo2Ok = vitals.spo2.sqi >= 0.5
+      frame.source = 'watch'
+      frame.watch = {
+        connected: true,
+        last_sync: new Date().toISOString(),
+        device: 'galaxy_watch',
+        available: {
+          hr: true,
+          spo2: spo2Ok,
+          temp: true,
+          hrv_rmssd: true,
+          resp_rate: false,
+          bp_sys: false,
+        },
+      }
+    }
+    return frame
   }
 
   function setScenario(id: string) {

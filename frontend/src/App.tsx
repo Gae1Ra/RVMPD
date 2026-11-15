@@ -25,6 +25,7 @@ import { AiDecisionSupport } from './components/AiDecisionSupport'
 import { Footer } from './components/Footer'
 import { IndicatorInfoModal, MissionsModal, NotifyModal, Toast } from './components/Modals'
 import { WristApp } from './components/WristApp'
+import { WatchDemoApp, type DataSourceMode } from './components/WatchDemoApp'
 import { CheckInPanel } from './components/CheckInPanel'
 import { SpaceWeatherPanel } from './components/SpaceWeatherPanel'
 import { AnalysisPanel } from './components/AnalysisPanel'
@@ -69,6 +70,14 @@ export default function App() {
   const [missions, setMissions] = useState<Mission[]>(INITIAL_MISSIONS)
   const [series, setSeries] = useState(emptySeries)
   const [scenarioId, setScenarioId] = useState('nominal')
+  const [dataSource, setDataSource] = useState<DataSourceMode>(() => {
+    if (typeof window === 'undefined') return 'simulator'
+    const q = new URLSearchParams(window.location.search).get('source')
+    if (q === 'galaxy_watch' || q === 'watch') return 'galaxy_watch'
+    return 'simulator'
+  })
+  const prevSimScenarioRef = useRef('nominal')
+  const bootWatchRef = useRef(dataSource === 'galaxy_watch')
 
   const localizedIndicators = localizeIndicators(indicators, t)
   const localizedMissions = localizeMissions(missions, t)
@@ -215,6 +224,36 @@ export default function App() {
     showToast(tf(t.scenarios.toast, { id }))
   }
 
+  const handleDataSourceChange = async (mode: DataSourceMode) => {
+    if (mode === dataSource) return
+    if (mode === 'galaxy_watch') {
+      if (scenarioId !== 'galaxy_watch') prevSimScenarioRef.current = scenarioId
+      setDataSource(mode)
+      try {
+        await setScenario('galaxy_watch')
+      } catch {
+        /* local mock still switches via setScenario when offline */
+      }
+      showToast(tf(t.scenarios.toast, { id: 'galaxy_watch' }))
+      return
+    }
+    setDataSource(mode)
+    const restore = prevSimScenarioRef.current === 'galaxy_watch' ? 'nominal' : prevSimScenarioRef.current
+    try {
+      await setScenario(restore)
+    } catch {
+      /* ignore */
+    }
+    showToast(tf(t.scenarios.toast, { id: restore }))
+  }
+
+  // Deep-link ?source=galaxy_watch boots the contest surface once telemetry is ready.
+  useEffect(() => {
+    if (!bootWatchRef.current) return
+    bootWatchRef.current = false
+    void setScenario('galaxy_watch')
+  }, [setScenario])
+
   const handleLogIntervention = (text: string) => {
     const stamp = formatMissionClock(missionSeconds)
     setInterventions((prev) => [`${stamp} · ${text}`, ...prev])
@@ -319,6 +358,8 @@ export default function App() {
           linkMode={mode}
           scenarioId={scenarioId}
           onSetScenario={handleSetScenario}
+          dataSource={dataSource}
+          onDataSourceChange={handleDataSourceChange}
           voiceMuted={voice.muted}
           voiceVolume={voice.volume}
           voiceProvider={voice.provider}
@@ -326,7 +367,24 @@ export default function App() {
           onVolumeChange={voice.setVolume}
         />
 
-        {surface === 'panel' ? (
+        {dataSource === 'galaxy_watch' ? (
+          <WatchDemoApp
+            indicators={localizedIndicators}
+            frame={frame}
+            globalLevel={globalLevel}
+            dataAgeSeconds={dataAgeSeconds}
+            linkLive={mode === 'live'}
+            lastSyncLabel={
+              frame?.watch?.last_sync
+                ? new Date(frame.watch.last_sync).toLocaleTimeString(locale === 'en' ? 'en-US' : locale === 'fr' ? 'fr-FR' : 'es-ES', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  })
+                : tf(t.status.ago, { n: dataAgeSeconds })
+            }
+          />
+        ) : surface === 'panel' ? (
           <>
             <StatusBar
               globalLevel={globalLevel}
