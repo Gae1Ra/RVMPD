@@ -71,6 +71,17 @@ Rules:
 
 Scenario ids: `nominal`, `solar_particle_event`, `hypoxia`, `loose_electrode`, `fatigue`.
 
+### WiFi / Galaxy Watch ingest (additive)
+
+Optional LAN bridge for phone companions, watch bridges, or mock generators. Does **not** replace the simulator: when no recent ingest arrives, frames keep `source: "simulator"`. Bind the API for LAN clients with `--host 0.0.0.0`.
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| POST | `/api/ingest/watch` | watch/WiFi aggregates (`hr` / `spo2` / `temp` / `hrv_rmssd` nullable) | `{ok, mapped, last_sync, source: "wifi", …}` |
+| GET | `/api/ingest/watch/status` | | `{connected, receiving, source, last_sync, last_ingest_age_s, device, available, receive_count, note}` |
+
+Missing sensors are **`null`** in the ingest body — never invent clinical values or ECG. While a client is connected, WS frames add `source: "wifi"` and an `ingest` block (`connected`, `receiving`, `last_sync`, `available`, …). Waveform channels are zeroed while WiFi is live because third-party bridges do not receive raw ECG/PPG. See `docs/WIFI_INGEST.md` and the project store doc `samsung-watch-bridge.md`.
+
 ## Local database
 
 The backend stores everything in one SQLite file, `backend/data/vitalis.db` (path can be changed with the `VITALIS_DB` environment variable). The file stays on the machine and is not committed. Stored: one row of vitals and radiation per second, every alert when it starts, every check-in, every scenario change and every analysis report.

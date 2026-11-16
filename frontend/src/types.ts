@@ -113,6 +113,18 @@ export interface Alert {
   guidance: string[]
 }
 
+/** Additive WiFi / watch ingest metadata on live frames. */
+export interface FrameIngest {
+  connected: boolean
+  receiving: boolean
+  source: 'simulator' | 'wifi' | string
+  last_sync: string | null
+  last_ingest_age_s: number | null
+  device: string | null
+  receive_count: number
+  available?: Record<string, boolean>
+}
+
 export interface Frame {
   type: 'frame'
   t: number
@@ -122,6 +134,9 @@ export interface Frame {
   radiation: Radiation
   global: Global
   alerts: Alert[]
+  /** Additive: "simulator" | "wifi" while a LAN client is feeding ingest. */
+  source?: 'simulator' | 'wifi' | string
+  ingest?: FrameIngest
 }
 
 export interface Scenario {

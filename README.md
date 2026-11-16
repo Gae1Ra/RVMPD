@@ -38,6 +38,19 @@ pip install -r requirements.txt
 uvicorn app.main:app --port 8000
 ```
 
+For a phone / watch companion on the same Wi‑Fi, bind all interfaces so LAN clients can reach the PC:
+
+```
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Then point the companion (or the mock generator) at `http://<PC_LAN_IP>:8000/api/ingest/watch`. The UI shows a **WiFi · Live / Receiving** chip that pulses when packets arrive. Details: [`docs/WIFI_INGEST.md`](docs/WIFI_INGEST.md).
+
+```
+python scripts/watch_mock_generator.py
+# or: python scripts/watch_mock_generator.py --url http://192.168.1.42:8000/api/ingest/watch
+```
+
 Optional Bedrock setup (smoke test + spend cap) is below under **Using AWS Bedrock**.
 
 ### 2. Frontend (terminal B)

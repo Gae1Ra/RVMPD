@@ -14,6 +14,17 @@ export const es = {
     wrist: 'Muñeca',
     title: 'Alternar entre Panel Unificado (1280px) y Reloj de Muñeca',
   },
+  wifi: {
+    aria: 'Recepción de datos WiFi',
+    label: 'Fuente',
+    simulator: 'Simulador',
+    live: 'WiFi · En vivo',
+    receiving: 'WiFi · Recibiendo',
+    lastSync: 'Última sync {time}',
+    syncNow: 'ahora',
+    syncAge: '{n} s',
+    waiting: 'Esperando cliente LAN',
+  },
   link: {
     live: 'En vivo',
     demo: 'Demo local',
