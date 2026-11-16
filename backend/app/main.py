@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse, Response
 from . import analysis, llm, tts
 from .alerts import AlertTracker
 from .db import Database, now_iso
+from .ingest.watch import WatchIngest, WatchStore
 from .medical_ai import insight_from_vitals, provider_status
 from .medical_ai.models import VitalsSnapshot
 from .pipeline import Pipeline
@@ -32,13 +33,14 @@ log = logging.getLogger("vitalis.db")
 class Engine:
     """Runs simulator -> pipeline -> stats -> alerts and builds one frame per tick."""
 
-    def __init__(self, seed=None, db=None):
+    def __init__(self, seed=None, db=None, watch_store=None):
         self.db = None  # attached after the warm-up so those first seconds are not stored
         self.logged_alerts = set()
         self.sim = Simulator(seed)
         self.pipeline = Pipeline(self.sim.rng)
         self.stats = VitalStats()
         self.alerts = AlertTracker()
+        self.watch_store = watch_store or WatchStore()
         self.ticks = 0
         self.vitals = {}
         self.radiation = "green"
@@ -61,12 +63,30 @@ class Engine:
         except sqlite3.Error as e:  # a storage problem must not stop the live stream
             log.warning("Could not store samples: %s", e)
 
+    def _wifi_live(self) -> bool:
+        """True while a LAN client is actively feeding /api/ingest/watch."""
+        return self.watch_store.is_connected()
+
     def _advance(self):
         chunk = self.sim.step()
+        if self._wifi_live():
+            # Overlay last WiFi aggregate onto latent truth (nulls ignored).
+            chunk.truth = self.watch_store.overlay_truth(chunk.truth)
         self.pipeline.push(chunk)
         self.ticks += 1
         if self.pipeline.ready and self.ticks % TICKS_PER_VITALS_UPDATE == 0:
             values, sqi = self.pipeline.measure(chunk.truth)
+            if self._wifi_live():
+                # Bridge cannot claim BP / RR / continuous SpO₂ / ECG — distrust those.
+                sqi = dict(sqi)
+                sqi["bp_sys"] = min(float(sqi.get("bp_sys", 1.0)), 0.15)
+                sqi["resp_rate"] = min(float(sqi.get("resp_rate", 1.0)), 0.15)
+                if self.watch_store.mapped.get("spo2") is None:
+                    sqi["spo2"] = min(float(sqi.get("spo2", 1.0)), 0.2)
+                if self.watch_store.mapped.get("temp") is None:
+                    sqi["temp"] = min(float(sqi.get("temp", 1.0)), 0.2)
+                if self.watch_store.mapped.get("hrv_rmssd") is None:
+                    sqi["hrv_rmssd"] = min(float(sqi.get("hrv_rmssd", 1.0)), 0.2)
             results = self.stats.update(values, sqi)
             self.radiation = radiation_status(chunk.truth["dose_rate"])
             self.vitals = {name: r.as_dict() for name, r in results.items()}
@@ -86,18 +106,43 @@ class Engine:
 
     def next_frame(self):
         chunk = self._advance()
-        return {
+        wifi = self._wifi_live()
+        # WiFi/watch clients do not send raw ECG/PPG — blank the scope while live.
+        if wifi:
+            zeros = [0.0] * CHUNK
+            wave = {"fs": FS, "ecg": zeros, "ppg": zeros, "resp": zeros}
+        else:
+            wave = {
+                "fs": FS,
+                "ecg": chunk.ecg.round(4).tolist(),
+                "ppg": chunk.ppg.round(3).tolist(),
+                "resp": chunk.resp.round(3).tolist(),
+            }
+        st = self.watch_store.status()
+        frame = {
             "type": "frame",
             "t": round(chunk.t, 1),
             "scenario": self.sim.scenario.id,
-            "wave": {"fs": FS, "ecg": chunk.ecg.round(4).tolist(), "ppg": chunk.ppg.round(3).tolist(),
-                     "resp": chunk.resp.round(3).tolist()},
+            "wave": wave,
             "vitals": self.vitals,
             "radiation": {"dose_rate_usv_h": round(chunk.dose_rate, 1),
                           "dose_total_msv": round(chunk.dose_total_msv, 3), "status": self.radiation},
             "global": self.global_block,
             "alerts": self.alert_list,
+            # Additive: existing clients ignore unknown keys.
+            "source": "wifi" if wifi else "simulator",
+            "ingest": {
+                "connected": st["connected"],
+                "receiving": st["receiving"],
+                "source": st["source"],
+                "last_sync": st["last_sync"],
+                "last_ingest_age_s": st["last_ingest_age_s"],
+                "device": st["device"],
+                "receive_count": st["receive_count"],
+                "available": st["available"],
+            },
         }
+        return frame
 
 
 class ScenarioChange(BaseModel):
@@ -153,7 +198,8 @@ async def run_simulation(app):
 @contextlib.asynccontextmanager
 async def lifespan(app):
     app.state.db = Database()
-    app.state.engine = Engine(db=app.state.db)
+    app.state.watch_store = WatchStore()
+    app.state.engine = Engine(db=app.state.db, watch_store=app.state.watch_store)
     app.state.clients = set()
     task = asyncio.create_task(run_simulation(app))
     yield
@@ -263,6 +309,18 @@ def run_tts(body: TtsIn):
             content={"fallback": "browser", "reason": e.reason},
         )
     return Response(content=audio, media_type="audio/mpeg")
+
+
+@app.post("/api/ingest/watch")
+def ingest_watch(body: WatchIngest):
+    """Accept WiFi / Galaxy Watch aggregates from a LAN companion (additive)."""
+    return app.state.watch_store.ingest(body)
+
+
+@app.get("/api/ingest/watch/status")
+def ingest_watch_status():
+    """Last WiFi ingest sync / receiving state (no network to the device)."""
+    return app.state.watch_store.status()
 
 
 @app.get("/api/medical-ai/status")

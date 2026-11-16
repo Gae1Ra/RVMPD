@@ -2,6 +2,7 @@ import type {
   AlertLogEntry,
   AnalysisReport,
   Checkin,
+  FrameIngest,
   HistoryResponse,
   MedicalAiRequest,
   MedicalAiStatus,
@@ -10,6 +11,11 @@ import type {
   SpaceWeather,
   Stats,
 } from './types'
+
+export type IngestStatus = FrameIngest & {
+  mapped?: Record<string, number | null>
+  note?: string
+}
 
 // Empty default uses the Vite proxy (/api, /ws → localhost:8000). Override with VITE_API_URL.
 export const API_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
@@ -62,4 +68,5 @@ export const api = {
   medicalAiStatus: () => request<MedicalAiStatus>('/api/medical-ai/status'),
   medicalInsight: (body?: MedicalAiRequest) =>
     request<MedicalInsight>('/api/medical-ai/insight', body ?? {}),
+  ingestWatchStatus: () => request<IngestStatus>('/api/ingest/watch/status'),
 }

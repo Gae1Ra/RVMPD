@@ -16,6 +16,17 @@ export const en: Dictionary = {
     wrist: 'Wrist',
     title: 'Switch between Unified Panel (1280px) and Wrist Watch',
   },
+  wifi: {
+    aria: 'WiFi data reception',
+    label: 'Source',
+    simulator: 'Simulator',
+    live: 'WiFi · Live',
+    receiving: 'WiFi · Receiving',
+    lastSync: 'Last sync {time}',
+    syncNow: 'now',
+    syncAge: '{n} s',
+    waiting: 'Waiting for LAN client',
+  },
   link: {
     live: 'Live',
     demo: 'Local demo',

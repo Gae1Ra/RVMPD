@@ -18,6 +18,7 @@ import { useT } from './i18n'
 import { localizeAlerts, localizeIndicators, localizeMissions } from './i18n/localize'
 import { Header } from './components/Header'
 import { StatusBar } from './components/StatusBar'
+import { WifiReceptionIndicator } from './components/WifiReceptionIndicator'
 import { EmergencyPanel } from './components/EmergencyPanel'
 import { VitalsGrid } from './components/VitalsGrid'
 import { EvolutionChart } from './components/EvolutionChart'
@@ -325,6 +326,8 @@ export default function App() {
           onToggleMute={voice.toggleMute}
           onVolumeChange={voice.setVolume}
         />
+
+        <WifiReceptionIndicator ingest={frame?.ingest} frameSource={frame?.source} />
 
         {surface === 'panel' ? (
           <>

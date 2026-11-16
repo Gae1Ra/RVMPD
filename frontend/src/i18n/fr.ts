@@ -16,6 +16,17 @@ export const fr: Dictionary = {
     wrist: 'Poignet',
     title: 'Basculer entre Panneau unifié (1280px) et Montre de poignet',
   },
+  wifi: {
+    aria: 'Réception de données Wi‑Fi',
+    label: 'Source',
+    simulator: 'Simulateur',
+    live: 'Wi‑Fi · Direct',
+    receiving: 'Wi‑Fi · Réception',
+    lastSync: 'Dernière sync {time}',
+    syncNow: 'maintenant',
+    syncAge: '{n} s',
+    waiting: 'En attente du client LAN',
+  },
   link: {
     live: 'En direct',
     demo: 'Démo locale',

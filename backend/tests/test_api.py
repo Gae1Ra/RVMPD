@@ -48,8 +48,10 @@ def test_spaceweather_shape(client):
 def test_websocket_frame_matches_contract(client):
     with client.websocket_connect("/ws") as ws:
         frame = ws.receive_json()
-    assert set(frame) == FRAME_KEYS
+    # Additive keys (source / ingest for WiFi) are allowed.
+    assert FRAME_KEYS <= set(frame)
     assert frame["type"] == "frame"
+    assert frame.get("source") in ("simulator", "wifi", None)
     assert frame["wave"]["fs"] == 250
     assert all(len(frame["wave"][c]) == 50 for c in ("ecg", "ppg", "resp"))
     assert set(frame["vitals"]) == VITALS
